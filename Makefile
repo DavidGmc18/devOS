@@ -4,20 +4,20 @@ SRC_DIR=src
 TOOLS_DIR=tools
 BUILD_DIR=build
 
-.PHONY: all floppy_image kernel bootloader clean always tools_fat
+.PHONY: all disk_image kernel bootloader clean always
 
-all: floppy_image tools_fat
+all: disk_image
 
 
 # Floppy image
-floppy_image: $(BUILD_DIR)/main_floppy.img
+disk_image: $(BUILD_DIR)/main_disk.img
 
-$(BUILD_DIR)/main_floppy.img: bootloader kernel
-	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
-	mkfs.fat -F 12 -n "NBOS" $(BUILD_DIR)/main_floppy.img
-	dd if=$(BUILD_DIR)/bootloader.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
-	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
-	mcopy -i $(BUILD_DIR)/main_floppy.img test.txt "::test.txt"
+$(BUILD_DIR)/main_disk.img: bootloader kernel
+	dd if=/dev/zero of=$(BUILD_DIR)/main_disk.img bs=512 count=32768
+	mkfs.fat -F 16 -n "NBOS" $(BUILD_DIR)/main_disk.img
+	dd if=$(BUILD_DIR)/bootloader.bin of=$(BUILD_DIR)/main_disk.img conv=notrunc
+	mcopy -i $(BUILD_DIR)/main_disk.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
+	mcopy -i $(BUILD_DIR)/main_disk.img hello.txt "::hello.txt"
 
 
 # Bootloader
@@ -32,13 +32,6 @@ kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: always
 	$(ASM) $(SRC_DIR)/kernel/main.asm -f bin -o $(BUILD_DIR)/kernel.bin
-
-
-# Tools
-tools_fat: $(BUILD_DIR)/tools/fat
-$(BUILD_DIR)/tools/fat: always $(TOOLS_DIR)/fat/fat.c
-	mkdir -p $(BUILD_DIR)/tools
-	$(CC) -g -o $(BUILD_DIR)/tools/fat $(TOOLS_DIR)/fat/fat.c
 
 
 # Always

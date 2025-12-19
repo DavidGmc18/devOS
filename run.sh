@@ -1,1 +1,1 @@
-qemu-system-i386 -fda build/main_disk.img
+qemu-system-i386 -hda build/main_disk.img

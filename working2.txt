@@ -1,18 +1,19 @@
-org 0x0
+%include "../bpb.inc"
+org 0x7E00
 bits 16
 
-
-%define ENDL 0x0D, 0x0A
-msg_hello2: db 'Hello world from KERNEL!', ENDL, 0
-
 start:
-    ; print hello world message
+    mov ax, cs
+    mov ds, ax
+    mov es, ax
+
     mov si, msg_hello
     call puts
 
 .halt:
     cli
     hlt
+    call .halt
 
 ;
 ; Prints a string to the screen
@@ -42,4 +43,4 @@ puts:
     pop si    
     ret
 
-msg_hello: db 'Hello world from KERNEL!', ENDL, 0
+msg_hello: db 'Hello world from second stage!', ENDL, 0

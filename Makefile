@@ -1,34 +1,54 @@
 ASM=nasm
+CC=gcc
+CC16=/mnt/c/WATCOM/binl/wcc
+LD16=/mnt/c/WATCOM/binl/wlink
 
 SRC_DIR=src
+TOOLS_DIR=tools
 BUILD_DIR=build
 
-.PHONY: all disk kernel bootloader clean always
+.PHONY: all floppy_image kernel bootloader clean always tools_fat run
 
-all: disk
+all: floppy_image tools_fat
 
 
 # Floppy image
-disk: $(BUILD_DIR)/disk.img
-$(BUILD_DIR)/disk.img: bootloader kernel
-	dd if=/dev/zero of=$(BUILD_DIR)/disk.img bs=512 count=32768
-	mkfs.fat -F 16 -n "NBOS" $(BUILD_DIR)/disk.img
-	dd if=$(BUILD_DIR)/bootloader.bin of=$(BUILD_DIR)/disk.img conv=notrunc
-	dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/disk.img bs=512 seek=1 conv=notrunc
-# 	mcopy -i $(BUILD_DIR)/disk.img hello.txt "::hello.txt"
-# 	dd if=hello.txt of=$(BUILD_DIR)/disk.img bs=1 seek=$$((512 + $$(stat -c%s $(BUILD_DIR)/kernel.bin))) conv=notrunc
+floppy_image: $(BUILD_DIR)/main_floppy.img
+
+$(BUILD_DIR)/main_floppy.img: bootloader kernel
+	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
+	mkfs.fat -F 12 -n "NBOS" $(BUILD_DIR)/main_floppy.img
+	dd if=$(BUILD_DIR)/stage1.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
+	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/stage2.bin "::stage2.bin"
+	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
 
 
 # Bootloader
-bootloader: $(BUILD_DIR)/bootloader.bin
-$(BUILD_DIR)/bootloader.bin: always
-	$(ASM) -f bin $(SRC_DIR)/bootloader/boot.asm -o $@
+bootloader: stage1 stage2
+
+stage1: $(BUILD_DIR)/stage1.bin
+
+$(BUILD_DIR)/stage1.bin: always
+	$(MAKE) -C $(SRC_DIR)/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
+
+stage2: $(BUILD_DIR)/stage2.bin
+
+$(BUILD_DIR)/stage2.bin: always
+	$(MAKE) -C $(SRC_DIR)/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 
 # Kernel
 kernel: $(BUILD_DIR)/kernel.bin
+
 $(BUILD_DIR)/kernel.bin: always
-	$(ASM) -f bin $(SRC_DIR)/kernel/main.asm -o $@
+	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
+
+
+# Tools
+tools_fat: $(BUILD_DIR)/tools/fat
+$(BUILD_DIR)/tools/fat: always $(TOOLS_DIR)/fat/fat.c
+	mkdir -p $(BUILD_DIR)/tools
+	$(CC) -g -o $(BUILD_DIR)/tools/fat $(TOOLS_DIR)/fat/fat.c
 
 
 # Always
@@ -38,4 +58,12 @@ always:
 
 # Clean
 clean:
+	$(MAKE) -C $(SRC_DIR)/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C $(SRC_DIR)/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	rm -rf $(BUILD_DIR)/*
+
+
+# Run
+run: $(BUILD_DIR)/main_floppy.img
+	qemu-system-i386 -fda build/main_floppy.img

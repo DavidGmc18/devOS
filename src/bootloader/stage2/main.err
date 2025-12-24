@@ -1,1 +1,10 @@
 disk.h(13): Warning! W138: No newline at end of file
+main.c(22): Error! E1113: Expression has incomplete type
+main.c(22): Error! E1010: Type mismatch
+main.c(22): Note! I2003: source conversion type is 'int'
+main.c(22): Note! I2004: target conversion type is 'void'
+main.c(24): Warning! W112: Parameter 1: Pointer truncated
+main.c(24): Note! I2003: source conversion type is 'void __far *'
+main.c(24): Note! I2004: target conversion type is 'char const *'
+main.c(24): Note! I2002: 'puts' defined in: stdio.h(4)
+main.c(27): Warning! W138: No newline at end of file

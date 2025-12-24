@@ -3,26 +3,26 @@
 
 uint8_t DISK_Initialize(DISK* disk, uint8_t driveNumber) {
     uint8_t driveType;
-    uint16_t cylinders, sectors, heads;
+    uint16_t cylinders, heads, sectors;
 
-    uint8_t err = x86_Disk_GetDriveParams(disk->id, &driveType, &cylinders, &sectors, &heads);
+    uint8_t err = x86_Disk_GetDriveParams(disk->id, &driveType, &cylinders, &heads, &sectors);
     if (err) return err;
 
     disk->id = driveNumber;
-    disk->cylinders = cylinders;
-    disk->heads = heads;
+    disk->cylinders = cylinders + 1;
+    disk->heads = heads + 1;
     disk->sectors = sectors;
 
     return 0;
 }
 
 void DISK_LBA2CHS(DISK* disk, uint32_t lba, uint16_t* cylinderOut, uint16_t* headOut, uint16_t* sectorOut) {
-    *sectorOut = lba % disk->sectors + 1;
-    *headOut = (lba / disk->sectors) % disk->heads;
     *cylinderOut = (lba / disk->sectors) / disk->heads;
+    *headOut = (lba / disk->sectors) % disk->heads;
+    *sectorOut = lba % disk->sectors + 1;
 }
 
-uint8_t DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, uint8_t* dataOut) {
+uint8_t DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, uint8_t far* dataOut) {
     uint16_t cylinder, head, sector;
 
     DISK_LBA2CHS(disk, lba, &cylinder, &head, &sector);

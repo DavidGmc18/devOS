@@ -126,9 +126,8 @@ _x86_Disk_Reset:
     pop bp
     ret
 
-
 ;
-; uint8_t _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t* driveTypeOut, uint16_t* cylindersOut, uint16_t* sectorsOut, uint16_t* headsOut);
+; uint8_t _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t* driveTypeOut, uint16_t* cylindersOut, uint16_t* headsOut, uint16_t* sectorsOut);
 ;
 global _x86_Disk_GetDriveParams
 _x86_Disk_GetDriveParams:
@@ -141,7 +140,7 @@ _x86_Disk_GetDriveParams:
     push di
 
     mov dl, [bp + 4]
-    mov ah, 8h
+    mov ah, 08h
     mov di, 0
     mov es, di
     stc
@@ -160,11 +159,11 @@ _x86_Disk_GetDriveParams:
 
     xor ch, ch          ; sectors - lower 5 bits in cl
     and cl, 0x3F
-    mov si, [bp + 10]
+    mov si, [bp + 12]
     mov [si], cx
 
-    mov cl, dh
-    mov si, [bp + 12]
+    mov cl, dh          ; heads - dh
+    mov si, [bp + 10]
     mov [si], cx
 
     pop di
@@ -178,7 +177,7 @@ _x86_Disk_GetDriveParams:
 
 
 ;
-; uint8_t _cdecl x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t head, uint16_t sector, uint8_t count, uint8_t* dataOut);
+; uint8_t _cdecl x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t head, uint16_t sector, uint8_t count, void far* dataOut);
 ;                              [bp + 4],      [bp + 6],          [bp + 8],      [bp + 10],       [bp + 12],     [bp + 14]
 ;
 global _x86_Disk_Read

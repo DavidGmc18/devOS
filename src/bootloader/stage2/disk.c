@@ -1,7 +1,7 @@
 #include "disk.h"
 #include "x86.h"
 
-uint8_t DISK_Initialize(DISK* disk, uint8_t driveNumber) {
+uint DISK_Initialize(DISK* disk, uint8_t driveNumber) {
     uint8_t driveType;
     uint16_t cylinders, heads, sectors;
 
@@ -22,17 +22,18 @@ void DISK_LBA2CHS(DISK* disk, uint32_t lba, uint16_t* cylinderOut, uint16_t* hea
     *sectorOut = lba % disk->sectors + 1;
 }
 
-uint8_t DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, uint8_t far* dataOut) {
+uint DISK_ReadSectors(DISK* disk, uint32_t lba, uint8_t sectors, void far* dataOut) {
     uint16_t cylinder, head, sector;
 
     DISK_LBA2CHS(disk, lba, &cylinder, &head, &sector);
 
+    uint err;
     for (uint8_t i = 0; i < 3; i++) {
-        uint8_t err = x86_Disk_Read(disk->id, cylinder, head, sector, sectors, dataOut);
+        err = x86_Disk_Read(disk->id, cylinder, head, sector, sectors, dataOut);
         if (!err) return 0;
 
         x86_Disk_Reset(disk->id);
     }
 
-    return 1;
+    return err;
 }

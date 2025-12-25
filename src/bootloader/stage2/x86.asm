@@ -108,7 +108,7 @@ _x86_Video_WriteCharTeletype:
 
 
 ;
-; uint8_t _cdecl x86_Disk_Reset(uint8_t drive);
+; uint _cdecl x86_Disk_Reset(uint8_t drive);
 ;
 global _x86_Disk_Reset
 _x86_Disk_Reset:
@@ -120,14 +120,14 @@ _x86_Disk_Reset:
     stc
     int 13h
 
-    mov al, ah ; return code
+    shr ax, 8 ; return code
 
     mov sp, bp
     pop bp
     ret
 
 ;
-; uint8_t _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t* driveTypeOut, uint16_t* cylindersOut, uint16_t* headsOut, uint16_t* sectorsOut);
+; uint _cdecl x86_Disk_GetDriveParams(uint8_t drive, uint8_t* driveTypeOut, uint16_t* cylindersOut, uint16_t* headsOut, uint16_t* sectorsOut);
 ;
 global _x86_Disk_GetDriveParams
 _x86_Disk_GetDriveParams:
@@ -146,7 +146,7 @@ _x86_Disk_GetDriveParams:
     stc
     int 13h
 
-    mov al, ah ; return code
+    shr ax, 8 ; return code
 
     mov si, [bp + 6]    ; drive type from bl
     mov [si], bl
@@ -177,7 +177,7 @@ _x86_Disk_GetDriveParams:
 
 
 ;
-; uint8_t _cdecl x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t head, uint16_t sector, uint8_t count, void far* dataOut);
+; uint _cdecl x86_Disk_Read(uint8_t drive, uint16_t cylinder, uint16_t head, uint16_t sector, uint8_t count, void far* dataOut);
 ;                              [bp + 4],      [bp + 6],          [bp + 8],      [bp + 10],       [bp + 12],     [bp + 14]
 ;
 global _x86_Disk_Read
@@ -210,7 +210,7 @@ _x86_Disk_Read:
     stc
     int 13h
 
-    mov al, ah ; return code
+    shr ax, 8 ; return code
 
     pop es
     pop bx

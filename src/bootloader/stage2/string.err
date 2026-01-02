@@ -1,4 +1,0 @@
-string.h(4): Warning! W138: No newline at end of file
-stdint.h(18): Warning! W138: No newline at end of file
-string.c(19): Warning! E1065: Invalid character constant
-string.c(31): Warning! W138: No newline at end of file

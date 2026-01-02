@@ -37,5 +37,8 @@ enum FAT_Attributes {
     FAT_ATTRIBUTE_LFN       = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
 
-uint FAT_Initalize(DISK* disk);
-FAT_File* FAT_Open(DISK* disk, const char* path);
+uint FAT_Initialize(DISK* disk);
+FAT_File far* FAT_Open(DISK* disk, const char* path);
+uint32_t FAT_Read(DISK* disk, FAT_File far* file, uint32_t byteCount, void* dataOut);
+uint FAT_ReadEntry(DISK* disk, FAT_File far* file, FAT_DirectoryEntry* dirEntry);
+void FAT_Close(FAT_File far* file);

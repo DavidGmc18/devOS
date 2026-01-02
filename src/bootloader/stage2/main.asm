@@ -19,5 +19,7 @@ entry:
     push dx
     call _cstart_
 
+.hlt:
     cli
     hlt
+    jmp .hlt

@@ -1,6 +1,7 @@
 #include "stdint.h"
 #include "stdio.h"
 #include "disk.h"
+#include "fat.h"
 
 void _cdecl cstart_(uint16_t bootDrive) {
     DISK disk;
@@ -10,12 +11,30 @@ void _cdecl cstart_(uint16_t bootDrive) {
         return;
     }
 
-    printf("Disk %i: C=%i H=%i S=%i\r\n", disk.id, disk.cylinders, disk.heads, disk.sectors);
-
-    if (DISK_ReadSectors(&disk, 19, 1, (void far*)0)) {
-        printf("Disk read error\r\n");
+    if (FAT_Initialize(&disk)) {
+        printf("FAT init error\r\n");
         return;
     }
 
-    for (;;);
+    FAT_File far* fd = FAT_Open(&disk, "/");
+    FAT_DirectoryEntry entry;
+    int i = 0;
+    while (!FAT_ReadEntry(&disk, fd, &entry) && i++ < 8) {
+        printf("  ");
+        for (int i = 0; i < 11; i++)
+            putc(entry.Name[i]);
+        printf("\r\n");
+    }
+    FAT_Close(fd);
+
+    char buffer[100];
+    uint32_t read;
+    FAT_File far* file = FAT_Open(&disk, "dir/test2.txt");
+    while (read = FAT_Read(&disk, file, sizeof(buffer), buffer)) {
+        for (uint32_t i = 0; i < read; i++) {
+            if (buffer[i] == '\n') putc('\r');
+            putc(buffer[i]);
+        }
+    }
+    FAT_Close(file);
 }

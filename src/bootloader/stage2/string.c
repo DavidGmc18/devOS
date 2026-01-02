@@ -16,7 +16,7 @@ char* strcpy(char* dst, const char* src) {
     if (dst == NULL) return NULL;
 
     if (src == NULL) {
-        *dst = '\o';
+        *dst = '\0';
         return dst;
     }
 
@@ -28,4 +28,14 @@ char* strcpy(char* dst, const char* src) {
     }
     *dst = '\0';
     return start;
+}
+
+unsigned strlen(const char* str) {
+    unsigned len = 0;
+    while (*str) {
+        len++;
+        str++;
+    }
+
+    return len;
 }

@@ -1,3 +1,11 @@
 {
-    "clangd.enable": false
+    "clangd.enable": false,
+    "files.exclude": {
+        "**/toolchain/**": true,
+        "**/build/**": true
+    },
+    "search.exclude": {
+        "**/toolchain/**": true,
+        "**/build/**": true
+    }
 }

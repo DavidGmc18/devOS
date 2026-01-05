@@ -1,5 +1,6 @@
 #pragma once
-#include "stdint.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-bool is_lower(char chr);
-char to_upper(char chr);
+bool islower(char chr);
+char toupper(char chr);

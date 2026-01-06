@@ -1,5 +1,3 @@
-# TODO improve so it does not re-run each time but only if needed (https://www.youtube.com/watch?v=qr8d7bZLPHg; 9:49)
-
 TOOLCHAIN_PREFIX = $(abspath toolchain/$(TARGET))
 export PATH := $(TOOLCHAIN_PREFIX)/bin:$(PATH)
 

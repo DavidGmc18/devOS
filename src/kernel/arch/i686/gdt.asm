@@ -1,7 +1,6 @@
 [bits 32]
 
 ; void __attribute__((cdecl)) i686_GDT_Load(GDT_Descriptor* descriptor, uint16_t codeSegment, uint16_t dataSegment);
-
 global i686_GDT_Load
 i686_GDT_Load:
     ; make new call frame

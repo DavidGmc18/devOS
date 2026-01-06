@@ -7,7 +7,9 @@
             "cppStandard": "c++14",
             "intelliSenseMode": "gcc-x86",
             "includePath": [
-                "${workspaceFolder}/src/**"
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/src/kernel",
+                "${workspaceFolder}/toolchain/i686-elf/lib/gcc/i686-elf/15.2.0/include"
             ],
             "defines": [
                 "__ELF__"

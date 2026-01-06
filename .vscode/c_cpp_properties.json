@@ -9,7 +9,7 @@
             "includePath": [
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/src/kernel",
-                "${workspaceFolder}/toolchain/i686-elf/lib/gcc/i686-elf/15.2.0/include"
+                "${workspaceFolder}/toolchain/i686-elf/lib/gcc/i686-elf/current/include"
             ],
             "defines": [
                 "__ELF__"

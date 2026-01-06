@@ -1,7 +1,7 @@
 TOOLCHAIN_PREFIX = $(abspath toolchain/$(TARGET))
 export PATH := $(TOOLCHAIN_PREFIX)/bin:$(PATH)
 
-toolchain: toolchain_binutils toolchain_gcc
+toolchain: toolchain_binutils toolchain_gcc libgcc-symlink
 
 BINUTILS_SRC = toolchain/binutils-$(BINUTILS_VERSION)
 BINUTILS_BUILD = toolchain/binutils-build-$(BINUTILS_VERSION)
@@ -45,6 +45,13 @@ $(TOOLCHAIN_PREFIX)/bin/i686-elf-gcc: $(TOOLCHAIN_PREFIX)/bin/i686-elf-ld $(GCC_
 $(GCC_SRC).tar.xz:
 	mkdir -p toolchain
 	cd toolchain && wget $(GCC_URL)
+
+GCC_LIBDIR := $(TOOLCHAIN_PREFIX)/lib/gcc/$(TARGET)
+
+libgcc-symlink: $(GCC_LIBDIR)/current
+
+$(GCC_LIBDIR)/current:
+	ln -sfn $(GCC_LIBDIR)/$(GCC_VERSION) $(GCC_LIBDIR)/current
 
 #
 # Clean

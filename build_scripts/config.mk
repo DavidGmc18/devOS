@@ -1,3 +1,6 @@
+export SOURCE_DIR = $(abspath .)
+export BUILD_DIR = $(abspath build)
+
 export CFLAGS = -std=c99 -g
 export ASMFLAGS =
 export CC = gcc
@@ -10,15 +13,12 @@ export LIBS =
 export TARGET = i686-elf
 export TARGET_ASM = nasm
 export TARGET_ASMFLAGS =
-export TARGET_CFLAGS = -std=c99 -g #-O2
+export TARGET_CFLAGS = -std=c99 -g -O2 -I$(SOURCE_DIR)/src/libs
 export TARGET_CC = $(TARGET)-gcc
 export TARGET_CXX = $(TARGET)-g++
 export TARGET_LD = $(TARGET)-gcc
 export TARGET_LINKFLAGS =
 export TARGET_LIBS =
-
-export SOURCE_DIR = $(abspath .)
-export BUILD_DIR = $(abspath build)
 
 BINUTILS_VERSION = 2.45.1
 BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar.xz

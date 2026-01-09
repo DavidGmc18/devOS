@@ -11,8 +11,6 @@ void __attribute__((section(".entry"))) start(BootParams* bootParams) {
     memset(&__bss_start, 0, (&__end) - (&__bss_start));
     HAL_Initialize();
 
-    clrscr();
-
     printf("Boot device: %x\n", bootParams->BootDevice);
     printf("Memory region count: %d\n", bootParams->Memory.RegionCount);
     uint64_t mem = 0;

@@ -4,111 +4,14 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-const uint8_t DEFAULT_COLOR = 0x7;
-
-int g_ScreenX = 0, g_ScreenY = 0;
-
-void setcursor(int x, int y) {
-    int pos = y * VGA_Get_ScreenWidth() + x;
-
-    i686_outb(0x3D4, 0x0F);
-    i686_outb(0x3D5, (uint8_t)(pos & 0xFF));
-    i686_outb(0x3D4, 0x0E);
-    i686_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+void fputc(char ch, fd_t stream) {
+    VFS_Write(stream, &ch, sizeof(ch));
 }
 
-void clrscr() {
-    VGA_clrscr(DEFAULT_COLOR);
-    g_ScreenX = 0;
-    g_ScreenY = 0;
-    setcursor(g_ScreenX, g_ScreenY);
-}
-
-void scrollback(int lines) {
-    for (int y = lines; y < VGA_Get_ScreenHeight(); y++) {
-        for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
-            VGA_putchr(x, y - lines, VGA_getchr(x, y));
-            VGA_putcolor(x, y - lines, VGA_getcolor(x, y));
-        }
-    }
-
-    for (int y = VGA_Get_ScreenHeight() - lines; y < VGA_Get_ScreenHeight(); y++) {
-        for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
-            VGA_putchr(x, y, '\0');
-            VGA_putcolor(x, y, DEFAULT_COLOR);
-        }
-    }
-
-    g_ScreenY -= lines;
-}
-
-void putc(char c) {
-    switch (c) {
-        case '\n':
-            g_ScreenX = 0;
-            g_ScreenY++;
-            break;
-    
-        case '\t':
-            for (int i = 0; i < 4 - (g_ScreenX % 4); i++) {
-                putc(' ');
-            }
-            break;
-
-        case '\r':
-            g_ScreenX = 0;
-            break;
-
-        default:
-            VGA_putchr(g_ScreenX, g_ScreenY, c);
-            g_ScreenX++;
-            break;
-    }
-
-    if (g_ScreenX >= VGA_Get_ScreenWidth()) {
-        g_ScreenY++;
-        g_ScreenX = 0;
-    }
-
-    if (g_ScreenY >= VGA_Get_ScreenHeight()) {
-        scrollback(1);
-    }
-
-    setcursor(g_ScreenX, g_ScreenY);
-}
-
-void puts(const char* str) {
-    while(*str) {
-        putc(*str);
+void fputs(const char* str, fd_t stream) {
+    while (*str) {
+        fputc(*str, stream);
         str++;
-    }
-}
-
-const char g_HexChars[] = "0123456789abcdef";
-
-void printf_unsigned(unsigned long long number, int radix) {
-    char buffer[32];
-    int pos = 0;
-
-    // convert number to ASCII
-    do {
-        unsigned long long rem = number % radix;
-        number /= radix;
-        buffer[pos++] = g_HexChars[rem];
-    } while (number > 0);
-
-    // print number in reverse order
-    while (--pos >= 0) {
-        putc(buffer[pos]);
-    }
-}
-
-void printf_signed(long long number, int radix) {
-    if (number < 0) {
-        putc('-');
-        printf_unsigned(-number, radix);
-    } else {
-        printf_unsigned(number, radix);
     }
 }
 
@@ -124,29 +27,54 @@ void printf_signed(long long number, int radix) {
 #define PRINTF_LENGTH_LONG          3
 #define PRINTF_LENGTH_LONG_LONG     4
 
-void printf(const char* fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
+const char g_HexChars[] = "0123456789abcdef";
 
+void fprintf_unsigned(fd_t stream, unsigned long long number, int radix) {
+    char buffer[32];
+    int pos = 0;
+
+    // convert number to ASCII
+    do {
+        unsigned long long rem = number % radix;
+        number /= radix;
+        buffer[pos++] = g_HexChars[rem];
+    } while (number > 0);
+
+    // print number in reverse order
+    while (--pos >= 0) {
+        fputc(buffer[pos], stream);
+    }
+}
+
+void fprintf_signed(fd_t stream, long long number, int radix) {
+    if (number < 0) {
+        fputc('-', stream);
+        fprintf_unsigned(stream, -number, radix);
+    } else {
+        fprintf_unsigned(stream, number, radix);
+    }
+}
+
+void vfprintf(fd_t stream, const char* format, va_list args) {
     int state = PRINTF_STATE_NORMAL;
     int length = PRINTF_LENGTH_DEFAULT;
     int radix = 10;
     bool sign = false;
     bool number = false;
 
-    while (*fmt) {
+    while (*format) {
         switch (state) {
             case PRINTF_STATE_NORMAL:
-                switch (*fmt) {
+                switch (*format) {
                     case '%':   state = PRINTF_STATE_LENGTH;
                                 break;
-                    default:    putc(*fmt);
+                    default:    fputc(*format, stream);
                                 break;
                 }
                 break;
 
             case PRINTF_STATE_LENGTH:
-                switch (*fmt) {
+                switch (*format) {
                     case 'h':   length = PRINTF_LENGTH_SHORT;
                                 state = PRINTF_STATE_LENGTH_SHORT;
                                 break;
@@ -158,7 +86,7 @@ void printf(const char* fmt, ...) {
                 break;
 
             case PRINTF_STATE_LENGTH_SHORT:
-                if (*fmt == 'h') {
+                if (*format == 'h') {
                     length = PRINTF_LENGTH_SHORT_SHORT;
                     state = PRINTF_STATE_SPEC;
                 } else {
@@ -167,7 +95,7 @@ void printf(const char* fmt, ...) {
                 break;
 
             case PRINTF_STATE_LENGTH_LONG:
-                if (*fmt == 'l') {
+                if (*format == 'l') {
                     length = PRINTF_LENGTH_LONG_LONG;
                     state = PRINTF_STATE_SPEC;
                 } else {
@@ -177,15 +105,15 @@ void printf(const char* fmt, ...) {
 
             case PRINTF_STATE_SPEC:
             PRINTF_STATE_SPEC_:
-                switch (*fmt) {
-                    case 'c':   putc((char)va_arg(args, int));
+                switch (*format) {
+                    case 'c':   fputc((char)va_arg(args, int), stream);
                                 break;
 
                     case 's':   
-                                puts(va_arg(args, const char*));
+                                fputs(va_arg(args, const char*), stream);
                                 break;
 
-                    case '%':   putc('%');
+                    case '%':   fputc('%', stream);
                                 break;
 
                     case 'd':
@@ -212,26 +140,26 @@ void printf(const char* fmt, ...) {
                         switch (length) {
                             case PRINTF_LENGTH_SHORT_SHORT:
                             case PRINTF_LENGTH_SHORT:
-                            case PRINTF_LENGTH_DEFAULT:     printf_signed(va_arg(args, int), radix);
+                            case PRINTF_LENGTH_DEFAULT:     fprintf_signed(stream, va_arg(args, int), radix);
                                                             break;
 
-                            case PRINTF_LENGTH_LONG:        printf_signed(va_arg(args, long), radix);
+                            case PRINTF_LENGTH_LONG:        fprintf_signed(stream, va_arg(args, long), radix);
                                                             break;
 
-                            case PRINTF_LENGTH_LONG_LONG:   printf_signed(va_arg(args, long long), radix);
+                            case PRINTF_LENGTH_LONG_LONG:   fprintf_signed(stream, va_arg(args, long long), radix);
                                                             break;
                         }
                     } else {
                         switch (length) {
                             case PRINTF_LENGTH_SHORT_SHORT:
                             case PRINTF_LENGTH_SHORT:
-                            case PRINTF_LENGTH_DEFAULT:     printf_unsigned(va_arg(args, unsigned int), radix);
+                            case PRINTF_LENGTH_DEFAULT:     fprintf_unsigned(stream, va_arg(args, unsigned int), radix);
                                                             break;
                                                             
-                            case PRINTF_LENGTH_LONG:        printf_unsigned(va_arg(args, unsigned  long), radix);
+                            case PRINTF_LENGTH_LONG:        fprintf_unsigned(stream, va_arg(args, unsigned  long), radix);
                                                             break;
 
-                            case PRINTF_LENGTH_LONG_LONG:   printf_unsigned(va_arg(args, unsigned  long long), radix);
+                            case PRINTF_LENGTH_LONG_LONG:   fprintf_unsigned(stream, va_arg(args, unsigned  long long), radix);
                                                             break;
                         }
                     }
@@ -246,21 +174,89 @@ void printf(const char* fmt, ...) {
                 break;
         }
 
-        fmt++;
+        format++;
     }
+}
 
+void fprintf(fd_t stream, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stream, format, args);
     va_end(args);
 }
 
-// void print_buffer(const char* msg, const void* buffer, uint32_t count)
-// {
-//     const uint8_t* u8Buffer = (const uint8_t*)buffer;
-    
-//     puts(msg);
-//     for (uint16_t i = 0; i < count; i++)
-//     {
-//         putc(g_HexChars[u8Buffer[i] >> 4]);
-//         putc(g_HexChars[u8Buffer[i] & 0xF]);
+void putc(char ch) {
+    fputc(ch, VFS_FD_STDOUT);
+}
+
+void puts(const char* str) {
+    fputs(str, VFS_FD_STDOUT);
+}
+
+void printf(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(VFS_FD_STDOUT, format, args);
+    va_end(args);
+}
+
+
+// void scrollback(int lines) {
+//     for (int y = lines; y < VGA_Get_ScreenHeight(); y++) {
+//         for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
+//             VGA_putchr(x, y - lines, VGA_getchr(x, y));
+//             VGA_putcolor(x, y - lines, VGA_getcolor(x, y));
+//         }
 //     }
-//     puts("\n");
+
+//     for (int y = VGA_Get_ScreenHeight() - lines; y < VGA_Get_ScreenHeight(); y++) {
+//         for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
+//             VGA_putchr(x, y, '\0');
+//             VGA_putcolor(x, y, DEFAULT_COLOR);
+//         }
+//     }
+
+//     g_ScreenY -= lines;
+// }
+
+// void putc(char ch) {
+//     switch (ch) {
+//         case '\n':
+//             g_ScreenX = 0;
+//             g_ScreenY++;
+//             break;
+    
+//         case '\t':
+//             for (int i = 0; i < 4 - (g_ScreenX % 4); i++) {
+//                 putc(' ');
+//             }
+//             break;
+
+//         case '\r':
+//             g_ScreenX = 0;
+//             break;
+
+//         default:
+//             VGA_putchr(g_ScreenX, g_ScreenY, ch);
+//             g_ScreenX++;
+//             break;
+//     }
+
+//     if (g_ScreenX >= VGA_Get_ScreenWidth()) {
+//         g_ScreenY++;
+//         g_ScreenX = 0;
+//     }
+
+//     if (g_ScreenY >= VGA_Get_ScreenHeight()) {
+//         scrollback(1);
+//     }
+
+//     setcursor(g_ScreenX, g_ScreenY);
+// }
+
+// void puts(const char* str) {
+//     while(*str) {
+//         putc(*str);
+//         str++;
+//     }
 // }

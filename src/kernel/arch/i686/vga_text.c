@@ -36,8 +36,8 @@ void VGA_clrscr(uint8_t clear_color) {
     // VGA_setcursor(g_ScreenX, g_ScreenY);
 }
 
-void VGA_putchr(uint16_t x, uint16_t y, char c) {
-    VGA_ScreenBuffer[2 * (y * VGA_ScreenWidth + x)] = c;
+void VGA_putchr(uint16_t x, uint16_t y, char ch) {
+    VGA_ScreenBuffer[2 * (y * VGA_ScreenWidth + x)] = ch;
 }
 
 void VGA_putcolor(uint16_t x, uint16_t y, uint8_t color) {

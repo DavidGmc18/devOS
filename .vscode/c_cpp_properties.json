@@ -18,7 +18,8 @@
                 "-std=c99",
                 "-ffreestanding",
                 "-nostdlib",
-                "--sysroot=${workspaceFolder}/toolchain/i686-elf"
+                "--sysroot=${workspaceFolder}/toolchain/i686-elf",
+                "-DDEBUG"
             ],
             "browse": {
                 "path": [

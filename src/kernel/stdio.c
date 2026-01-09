@@ -1,39 +1,15 @@
 #include <stdio.h>
+#include <arch/i686/vga_text.h>
 #include <arch/i686/io.h>
-
 #include <stdarg.h>
 #include <stdbool.h>
 
-const unsigned SCREEN_WIDTH = 80;
-const unsigned SCREEN_HEIGHT = 25;
 const uint8_t DEFAULT_COLOR = 0x7;
 
-uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
 int g_ScreenX = 0, g_ScreenY = 0;
 
-void putchr(int x, int y, char c)
-{
-    g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)] = c;
-}
-
-void putcolor(int x, int y, uint8_t color)
-{
-    g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x) + 1] = color;
-}
-
-char getchr(int x, int y)
-{
-    return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)];
-}
-
-uint8_t getcolor(int x, int y)
-{
-    return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x) + 1];
-}
-
-void setcursor(int x, int y)
-{
-    int pos = y * SCREEN_WIDTH + x;
+void setcursor(int x, int y) {
+    int pos = y * VGA_Get_ScreenWidth() + x;
 
     i686_outb(0x3D4, 0x0F);
     i686_outb(0x3D5, (uint8_t)(pos & 0xFF));
@@ -41,51 +17,42 @@ void setcursor(int x, int y)
     i686_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
 }
 
-void clrscr()
-{
-    for (int y = 0; y < SCREEN_HEIGHT; y++)
-        for (int x = 0; x < SCREEN_WIDTH; x++)
-        {
-            putchr(x, y, '\0');
-            putcolor(x, y, DEFAULT_COLOR);
-        }
-
+void clrscr() {
+    VGA_clrscr(DEFAULT_COLOR);
     g_ScreenX = 0;
     g_ScreenY = 0;
     setcursor(g_ScreenX, g_ScreenY);
 }
 
-void scrollback(int lines)
-{
-    for (int y = lines; y < SCREEN_HEIGHT; y++)
-        for (int x = 0; x < SCREEN_WIDTH; x++)
-        {
-            putchr(x, y - lines, getchr(x, y));
-            putcolor(x, y - lines, getcolor(x, y));
+void scrollback(int lines) {
+    for (int y = lines; y < VGA_Get_ScreenHeight(); y++) {
+        for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
+            VGA_putchr(x, y - lines, VGA_getchr(x, y));
+            VGA_putcolor(x, y - lines, VGA_getcolor(x, y));
         }
+    }
 
-    for (int y = SCREEN_HEIGHT - lines; y < SCREEN_HEIGHT; y++)
-        for (int x = 0; x < SCREEN_WIDTH; x++)
-        {
-            putchr(x, y, '\0');
-            putcolor(x, y, DEFAULT_COLOR);
+    for (int y = VGA_Get_ScreenHeight() - lines; y < VGA_Get_ScreenHeight(); y++) {
+        for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
+            VGA_putchr(x, y, '\0');
+            VGA_putcolor(x, y, DEFAULT_COLOR);
         }
+    }
 
     g_ScreenY -= lines;
 }
 
-void putc(char c)
-{
-    switch (c)
-    {
+void putc(char c) {
+    switch (c) {
         case '\n':
             g_ScreenX = 0;
             g_ScreenY++;
             break;
     
         case '\t':
-            for (int i = 0; i < 4 - (g_ScreenX % 4); i++)
+            for (int i = 0; i < 4 - (g_ScreenX % 4); i++) {
                 putc(' ');
+            }
             break;
 
         case '\r':
@@ -93,26 +60,25 @@ void putc(char c)
             break;
 
         default:
-            putchr(g_ScreenX, g_ScreenY, c);
+            VGA_putchr(g_ScreenX, g_ScreenY, c);
             g_ScreenX++;
             break;
     }
 
-    if (g_ScreenX >= SCREEN_WIDTH)
-    {
+    if (g_ScreenX >= VGA_Get_ScreenWidth()) {
         g_ScreenY++;
         g_ScreenX = 0;
     }
-    if (g_ScreenY >= SCREEN_HEIGHT)
+
+    if (g_ScreenY >= VGA_Get_ScreenHeight()) {
         scrollback(1);
+    }
 
     setcursor(g_ScreenX, g_ScreenY);
 }
 
-void puts(const char* str)
-{
-    while(*str)
-    {
+void puts(const char* str) {
+    while(*str) {
         putc(*str);
         str++;
     }
@@ -120,32 +86,30 @@ void puts(const char* str)
 
 const char g_HexChars[] = "0123456789abcdef";
 
-void printf_unsigned(unsigned long long number, int radix)
-{
+void printf_unsigned(unsigned long long number, int radix) {
     char buffer[32];
     int pos = 0;
 
     // convert number to ASCII
-    do 
-    {
+    do {
         unsigned long long rem = number % radix;
         number /= radix;
         buffer[pos++] = g_HexChars[rem];
     } while (number > 0);
 
     // print number in reverse order
-    while (--pos >= 0)
+    while (--pos >= 0) {
         putc(buffer[pos]);
+    }
 }
 
-void printf_signed(long long number, int radix)
-{
-    if (number < 0)
-    {
+void printf_signed(long long number, int radix) {
+    if (number < 0) {
         putc('-');
         printf_unsigned(-number, radix);
+    } else {
+        printf_unsigned(number, radix);
     }
-    else printf_unsigned(number, radix);
 }
 
 #define PRINTF_STATE_NORMAL         0
@@ -160,8 +124,7 @@ void printf_signed(long long number, int radix)
 #define PRINTF_LENGTH_LONG          3
 #define PRINTF_LENGTH_LONG_LONG     4
 
-void printf(const char* fmt, ...)
-{
+void printf(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -171,13 +134,10 @@ void printf(const char* fmt, ...)
     bool sign = false;
     bool number = false;
 
-    while (*fmt)
-    {
-        switch (state)
-        {
+    while (*fmt) {
+        switch (state) {
             case PRINTF_STATE_NORMAL:
-                switch (*fmt)
-                {
+                switch (*fmt) {
                     case '%':   state = PRINTF_STATE_LENGTH;
                                 break;
                     default:    putc(*fmt);
@@ -186,8 +146,7 @@ void printf(const char* fmt, ...)
                 break;
 
             case PRINTF_STATE_LENGTH:
-                switch (*fmt)
-                {
+                switch (*fmt) {
                     case 'h':   length = PRINTF_LENGTH_SHORT;
                                 state = PRINTF_STATE_LENGTH_SHORT;
                                 break;
@@ -199,27 +158,26 @@ void printf(const char* fmt, ...)
                 break;
 
             case PRINTF_STATE_LENGTH_SHORT:
-                if (*fmt == 'h')
-                {
+                if (*fmt == 'h') {
                     length = PRINTF_LENGTH_SHORT_SHORT;
                     state = PRINTF_STATE_SPEC;
+                } else {
+                    goto PRINTF_STATE_SPEC_;
                 }
-                else goto PRINTF_STATE_SPEC_;
                 break;
 
             case PRINTF_STATE_LENGTH_LONG:
-                if (*fmt == 'l')
-                {
+                if (*fmt == 'l') {
                     length = PRINTF_LENGTH_LONG_LONG;
                     state = PRINTF_STATE_SPEC;
+                } else {
+                    goto PRINTF_STATE_SPEC_;
                 }
-                else goto PRINTF_STATE_SPEC_;
                 break;
 
             case PRINTF_STATE_SPEC:
             PRINTF_STATE_SPEC_:
-                switch (*fmt)
-                {
+                switch (*fmt) {
                     case 'c':   putc((char)va_arg(args, int));
                                 break;
 
@@ -249,38 +207,32 @@ void printf(const char* fmt, ...)
                     default:    break;
                 }
 
-                if (number)
-                {
-                    if (sign)
-                    {
-                        switch (length)
-                        {
-                        case PRINTF_LENGTH_SHORT_SHORT:
-                        case PRINTF_LENGTH_SHORT:
-                        case PRINTF_LENGTH_DEFAULT:     printf_signed(va_arg(args, int), radix);
-                                                        break;
+                if (number) {
+                    if (sign) {
+                        switch (length) {
+                            case PRINTF_LENGTH_SHORT_SHORT:
+                            case PRINTF_LENGTH_SHORT:
+                            case PRINTF_LENGTH_DEFAULT:     printf_signed(va_arg(args, int), radix);
+                                                            break;
 
-                        case PRINTF_LENGTH_LONG:        printf_signed(va_arg(args, long), radix);
-                                                        break;
+                            case PRINTF_LENGTH_LONG:        printf_signed(va_arg(args, long), radix);
+                                                            break;
 
-                        case PRINTF_LENGTH_LONG_LONG:   printf_signed(va_arg(args, long long), radix);
-                                                        break;
+                            case PRINTF_LENGTH_LONG_LONG:   printf_signed(va_arg(args, long long), radix);
+                                                            break;
                         }
-                    }
-                    else
-                    {
-                        switch (length)
-                        {
-                        case PRINTF_LENGTH_SHORT_SHORT:
-                        case PRINTF_LENGTH_SHORT:
-                        case PRINTF_LENGTH_DEFAULT:     printf_unsigned(va_arg(args, unsigned int), radix);
-                                                        break;
-                                                        
-                        case PRINTF_LENGTH_LONG:        printf_unsigned(va_arg(args, unsigned  long), radix);
-                                                        break;
+                    } else {
+                        switch (length) {
+                            case PRINTF_LENGTH_SHORT_SHORT:
+                            case PRINTF_LENGTH_SHORT:
+                            case PRINTF_LENGTH_DEFAULT:     printf_unsigned(va_arg(args, unsigned int), radix);
+                                                            break;
+                                                            
+                            case PRINTF_LENGTH_LONG:        printf_unsigned(va_arg(args, unsigned  long), radix);
+                                                            break;
 
-                        case PRINTF_LENGTH_LONG_LONG:   printf_unsigned(va_arg(args, unsigned  long long), radix);
-                                                        break;
+                            case PRINTF_LENGTH_LONG_LONG:   printf_unsigned(va_arg(args, unsigned  long long), radix);
+                                                            break;
                         }
                     }
                 }
@@ -300,15 +252,15 @@ void printf(const char* fmt, ...)
     va_end(args);
 }
 
-void print_buffer(const char* msg, const void* buffer, uint32_t count)
-{
-    const uint8_t* u8Buffer = (const uint8_t*)buffer;
+// void print_buffer(const char* msg, const void* buffer, uint32_t count)
+// {
+//     const uint8_t* u8Buffer = (const uint8_t*)buffer;
     
-    puts(msg);
-    for (uint16_t i = 0; i < count; i++)
-    {
-        putc(g_HexChars[u8Buffer[i] >> 4]);
-        putc(g_HexChars[u8Buffer[i] & 0xF]);
-    }
-    puts("\n");
-}
+//     puts(msg);
+//     for (uint16_t i = 0; i < count; i++)
+//     {
+//         putc(g_HexChars[u8Buffer[i] >> 4]);
+//         putc(g_HexChars[u8Buffer[i] & 0xF]);
+//     }
+//     puts("\n");
+// }

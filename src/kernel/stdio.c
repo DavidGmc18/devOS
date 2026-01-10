@@ -23,7 +23,6 @@ void fputn(const char* str, fd_t stream, size_t size) {
 #define PRINTF_STATE_LENGTH_SHORT   2
 #define PRINTF_STATE_LENGTH_LONG    3
 #define PRINTF_STATE_SPEC           4
-#define PRINTF_STATE_ANSI           5
 
 #define PRINTF_LENGTH_DEFAULT       0
 #define PRINTF_LENGTH_SHORT_SHORT   1
@@ -33,21 +32,19 @@ void fputn(const char* str, fd_t stream, size_t size) {
 
 const char g_HexChars[] = "0123456789abcdef";
 
+#define PRINTF_UNSIGNED_BUFFER_SIZE 32
 void fprintf_unsigned(fd_t stream, unsigned long long number, int radix) {
-    char buffer[32];
+    char buffer[PRINTF_UNSIGNED_BUFFER_SIZE];
     int pos = 0;
 
     // convert number to ASCII
     do {
         unsigned long long rem = number % radix;
         number /= radix;
-        buffer[pos++] = g_HexChars[rem];
+        buffer[PRINTF_UNSIGNED_BUFFER_SIZE-1-pos++] = g_HexChars[rem];
     } while (number > 0);
 
-    // print number in reverse order
-    while (--pos >= 0) {
-        fputc(buffer[pos], stream);
-    }
+    fputn(buffer + PRINTF_UNSIGNED_BUFFER_SIZE - pos, stream, pos);
 }
 
 void fprintf_signed(fd_t stream, long long number, int radix) {
@@ -65,20 +62,22 @@ void vfprintf(fd_t stream, const char* format, va_list args) {
     int radix = 10;
     bool sign = false;
     bool number = false;
-    const char* ansi_start = NULL;
+    const char* seq_start = NULL;
 
     while (*format) {
         switch (state) {
             case PRINTF_STATE_NORMAL:
                 switch (*format) {
                     case '%':   state = PRINTF_STATE_LENGTH;
+                                if (seq_start != NULL) {
+                                    fputn(seq_start, stream, format - seq_start);
+                                    seq_start = NULL;
+                                }
                                 break;
 
-                    case '\033':    state = PRINTF_STATE_ANSI;
-                                    ansi_start = format;
-                                    break;
-
-                    default:    fputc(*format, stream);
+                    default:    if (seq_start == NULL) {
+                                    seq_start = format;
+                                }
                                 break;
                 }
                 break;
@@ -182,21 +181,13 @@ void vfprintf(fd_t stream, const char* format, va_list args) {
                 sign = false;
                 number = false;
                 break;
-
-            case PRINTF_STATE_ANSI:
-                if (format == ansi_start+1) {
-                    if (*format != '[') {
-                        state = PRINTF_STATE_NORMAL;
-                        fputc(*ansi_start, stream);
-                        fputc(*format, stream);
-                    }
-                } else if (*format == 'm' || *format == '%') { // break in case ansi was not closed as expected
-                    fputn(ansi_start, stream, format - ansi_start + 1);
-                    state = PRINTF_STATE_NORMAL;
-                }
         }
 
         format++;
+    }
+
+    if (seq_start != NULL) {
+        fputn(seq_start, stream, format - seq_start);
     }
 }
 

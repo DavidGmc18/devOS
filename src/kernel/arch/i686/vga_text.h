@@ -13,5 +13,5 @@ char VGA_getchr(uint16_t x, uint16_t y);
 uint8_t VGA_getcolor(uint16_t x, uint16_t y);
 
 void VGA_putc(char ch);
-void VGA_puts(const char* str);
 void VGA_putn(const char* str, size_t size);
+void VGA_puts(const char* str);

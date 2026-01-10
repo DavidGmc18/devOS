@@ -2,6 +2,7 @@
 #include "io.h"
 #include "logger.h"
 #include <stdbool.h>
+#include "string.h"
 
 uint16_t ScreenWidth;
 uint16_t ScreenHeight;
@@ -113,13 +114,6 @@ void VGA_putc(char ch) {
     VGA_setcursor(ScreenX, ScreenY);
 }
 
-void VGA_puts(const char* str) {
-    while (*str) {
-        VGA_putc(*str);
-        str++;
-    }
-}
-
 const uint8_t ansi_to_vga[] = {
     [0] =   0x0,  // Black
     [1] =   0x4,   // Red
@@ -176,34 +170,44 @@ void VGA_ansi_set(uint8_t ansi_code) {
     }
 }
 
-// TODO printf remainder after ansi end and infact even before or separate ascii func?
-void VGA_putn(const char* str, size_t size) {
-    if (str[0] == '\033' && str[1] == '[') {
-        int end = 0;
-        for (int i = 2; i < size; i++) {
-            if (str[i] == 'm') {
-                end = i;
-                break;
-            }
+void VGA_parse_ANSI(const char* str, size_t size) {
+    uint8_t ansi_code = 0;
+    for (int i = 0; i < size; i++) {
+        if (str[i] >= '0' && str[i] <= '9') {
+            ansi_code *= 10;
+            ansi_code += (str[i] - '0');
+        } else if (str[i] == ';' || str[i] == 'm') {
+            VGA_ansi_set(ansi_code);
+            ansi_code = 0;
         }
-        if (end == 0) goto normal;
-
-        uint8_t ansi_code = 0;
-        for (int i = 2; i <= end; i++) {
-            if (str[i] == ';' || str[i] == 'm') {
-                VGA_ansi_set(ansi_code);
-                ansi_code = 0;
-            } else if (str[i] >= '0' && str[i] <= '9') {
-                ansi_code *= 10;
-                ansi_code += str[i] - '0';
-            }
-        }
-
-        return;
     }
+}
 
-    normal:
+void VGA_putn(const char* str, size_t size) {
     for (size_t i = 0; i < size; i++) {
+        // check for ANSI start
+        if (str[i] == '\033' && str[i+1] == '[') {
+            // find end
+            int end = 0;
+            for (int j = i+2; j < size; j++) {
+                if (str[j] == 'm') {
+                    end = j;
+                    break;
+                }
+            }
+
+            // parse ANSI if end found
+            if (end != 0) {
+                VGA_parse_ANSI(str + i, end - i + 1);
+                i = end;
+                continue;
+            }
+        }
+
         VGA_putc(str[i]);
     }
+}
+
+void VGA_puts(const char* str) {
+    VGA_putn(str, strlen(str));
 }

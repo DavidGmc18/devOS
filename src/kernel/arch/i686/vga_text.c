@@ -1,5 +1,7 @@
 #include "vga_text.h"
 #include "io.h"
+#include "logger.h"
+#include <stdbool.h>
 
 uint16_t ScreenWidth;
 uint16_t ScreenHeight;
@@ -9,7 +11,9 @@ uint8_t* ScreenBuffer;
 uint16_t ScreenX = 0;
 uint16_t ScreenY = 0;
 
-const uint8_t DEFAULT_COLOR = 0x7;
+const uint8_t DEFAULT_COLOR = 0x07;
+
+uint8_t CursorColor = DEFAULT_COLOR;
 
 void VGA_Initialize(uint16_t Width, uint16_t Height, uint8_t* Buffer) {
     ScreenWidth = Width;
@@ -92,6 +96,7 @@ void VGA_putc(char ch) {
 
         default:
             VGA_putchr(ScreenX, ScreenY, ch);
+            VGA_putcolor(ScreenX, ScreenY, CursorColor);
             ScreenX++;
             break;
     }
@@ -115,7 +120,89 @@ void VGA_puts(const char* str) {
     }
 }
 
+const uint8_t ansi_to_vga[] = {
+    [0] =   0x0,  // Black
+    [1] =   0x4,   // Red
+    [2] =   0x2,   // Green
+    [3] =   0x6,   // Yellow / Brown
+    [4] =   0x1,   // Blue
+    [5] =   0x5,   // Magenta
+    [6] =   0x3,   // Cyan
+    [7] =   0x7,   // White
+
+    [8] =   0x8,   // Bright Black
+    [9] =   0xC,   // Bright Red
+    [10] =  0xA,   // Bright Green
+    [11] =  0xE,   // Bright Yellow
+    [12] =  0x9,   // Bright Blue
+    [13] =  0xD,   // Bright Magenta
+    [14] =  0xB,   // Bright Cyan
+    [15] =  0xF,   // Bright White
+};
+
+void VGA_ansi_set(uint8_t ansi_code) {
+    // FG
+    if (ansi_code >= 30 && ansi_code < 38) {
+        CursorColor &= 0xF0; 
+        CursorColor |= ansi_to_vga[ansi_code - 30];
+        return;
+    }
+    
+    // FG
+    if (ansi_code >= 90 && ansi_code < 98) {
+        CursorColor &= 0xF0; 
+        CursorColor |= ansi_to_vga[ansi_code - 90 + 8];
+        return;
+    }
+    
+    // BG
+    if (ansi_code >= 40 && ansi_code < 48) {
+        CursorColor &= 0x0F; 
+        CursorColor |= (ansi_to_vga[ansi_code - 40] << 4);
+        return;
+    }
+
+    // BG
+    if (ansi_code >= 100 && ansi_code < 108) {
+        CursorColor &= 0x0F; 
+        CursorColor |= (ansi_to_vga[ansi_code - 100 + 8] << 4);
+        return;
+    }
+
+    // Reset
+    if (ansi_code == 0) {
+        CursorColor = DEFAULT_COLOR;
+        return;
+    }
+}
+
+// TODO printf remainder after ansi end and infact even before or separate ascii func?
 void VGA_putn(const char* str, size_t size) {
+    if (str[0] == '\033' && str[1] == '[') {
+        int end = 0;
+        for (int i = 2; i < size; i++) {
+            if (str[i] == 'm') {
+                end = i;
+                break;
+            }
+        }
+        if (end == 0) goto normal;
+
+        uint8_t ansi_code = 0;
+        for (int i = 2; i <= end; i++) {
+            if (str[i] == ';' || str[i] == 'm') {
+                VGA_ansi_set(ansi_code);
+                ansi_code = 0;
+            } else if (str[i] >= '0' && str[i] <= '9') {
+                ansi_code *= 10;
+                ansi_code += str[i] - '0';
+            }
+        }
+
+        return;
+    }
+
+    normal:
     for (size_t i = 0; i < size; i++) {
         VGA_putc(str[i]);
     }

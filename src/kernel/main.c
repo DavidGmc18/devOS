@@ -3,6 +3,7 @@
 #include "memory.h"
 #include <hal/hal.h>
 #include <boot/bootparams.h>
+#include "logger.h"
 
 extern uint8_t __bss_start;
 extern uint8_t __end;
@@ -10,8 +11,9 @@ extern uint8_t __end;
 void __attribute__((section(".entry"))) start(BootParams* bootParams) {
     memset(&__bss_start, 0, (&__end) - (&__bss_start));
     HAL_Initialize();
+    logf("MAIN", LOGGER_LVL_INFO, "Boot device: %x", bootParams->BootDevice);
 
-    printf("Boot device: %x\n", bootParams->BootDevice);
+    printf("\033[1;33mBoot de\033[0mvice: %x\n", bootParams->BootDevice);
     printf("Memory region count: %d\n", bootParams->Memory.RegionCount);
     uint64_t mem = 0;
     for (int i = 0; i < bootParams->Memory.RegionCount; i++) {
@@ -22,6 +24,7 @@ void __attribute__((section(".entry"))) start(BootParams* bootParams) {
         mem += bootParams->Memory.Regions[i].Length;
     }
     printf("%lluB\n", mem);
+    logf("MAIN", LOGGER_LVL_INFO, "test");
 
     printf("Hello world from kernel!!!\n");
 

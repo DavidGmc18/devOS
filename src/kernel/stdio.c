@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <arch/i686/vga_text.h>
 #include <arch/i686/io.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -15,11 +14,16 @@ void fputs(const char* str, fd_t stream) {
     }
 }
 
+void fputn(const char* str, fd_t stream, size_t size) {
+    VFS_Write(stream, str, sizeof(char) * size);
+}
+
 #define PRINTF_STATE_NORMAL         0
 #define PRINTF_STATE_LENGTH         1
 #define PRINTF_STATE_LENGTH_SHORT   2
 #define PRINTF_STATE_LENGTH_LONG    3
 #define PRINTF_STATE_SPEC           4
+#define PRINTF_STATE_ANSI           5
 
 #define PRINTF_LENGTH_DEFAULT       0
 #define PRINTF_LENGTH_SHORT_SHORT   1
@@ -61,6 +65,7 @@ void vfprintf(fd_t stream, const char* format, va_list args) {
     int radix = 10;
     bool sign = false;
     bool number = false;
+    const char* ansi_start = NULL;
 
     while (*format) {
         switch (state) {
@@ -68,6 +73,11 @@ void vfprintf(fd_t stream, const char* format, va_list args) {
                 switch (*format) {
                     case '%':   state = PRINTF_STATE_LENGTH;
                                 break;
+
+                    case '\033':    state = PRINTF_STATE_ANSI;
+                                    ansi_start = format;
+                                    break;
+
                     default:    fputc(*format, stream);
                                 break;
                 }
@@ -172,6 +182,18 @@ void vfprintf(fd_t stream, const char* format, va_list args) {
                 sign = false;
                 number = false;
                 break;
+
+            case PRINTF_STATE_ANSI:
+                if (format == ansi_start+1) {
+                    if (*format != '[') {
+                        state = PRINTF_STATE_NORMAL;
+                        fputc(*ansi_start, stream);
+                        fputc(*format, stream);
+                    }
+                } else if (*format == 'm' || *format == '%') { // break in case ansi was not closed as expected
+                    fputn(ansi_start, stream, format - ansi_start + 1);
+                    state = PRINTF_STATE_NORMAL;
+                }
         }
 
         format++;
@@ -199,64 +221,3 @@ void printf(const char* format, ...) {
     vfprintf(VFS_FD_STDOUT, format, args);
     va_end(args);
 }
-
-
-// void scrollback(int lines) {
-//     for (int y = lines; y < VGA_Get_ScreenHeight(); y++) {
-//         for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
-//             VGA_putchr(x, y - lines, VGA_getchr(x, y));
-//             VGA_putcolor(x, y - lines, VGA_getcolor(x, y));
-//         }
-//     }
-
-//     for (int y = VGA_Get_ScreenHeight() - lines; y < VGA_Get_ScreenHeight(); y++) {
-//         for (int x = 0; x < VGA_Get_ScreenWidth(); x++) {
-//             VGA_putchr(x, y, '\0');
-//             VGA_putcolor(x, y, DEFAULT_COLOR);
-//         }
-//     }
-
-//     g_ScreenY -= lines;
-// }
-
-// void putc(char ch) {
-//     switch (ch) {
-//         case '\n':
-//             g_ScreenX = 0;
-//             g_ScreenY++;
-//             break;
-    
-//         case '\t':
-//             for (int i = 0; i < 4 - (g_ScreenX % 4); i++) {
-//                 putc(' ');
-//             }
-//             break;
-
-//         case '\r':
-//             g_ScreenX = 0;
-//             break;
-
-//         default:
-//             VGA_putchr(g_ScreenX, g_ScreenY, ch);
-//             g_ScreenX++;
-//             break;
-//     }
-
-//     if (g_ScreenX >= VGA_Get_ScreenWidth()) {
-//         g_ScreenY++;
-//         g_ScreenX = 0;
-//     }
-
-//     if (g_ScreenY >= VGA_Get_ScreenHeight()) {
-//         scrollback(1);
-//     }
-
-//     setcursor(g_ScreenX, g_ScreenY);
-// }
-
-// void puts(const char* str) {
-//     while(*str) {
-//         putc(*str);
-//         str++;
-//     }
-// }

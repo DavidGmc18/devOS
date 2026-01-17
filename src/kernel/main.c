@@ -4,6 +4,7 @@
 #include <hal/hal.h>
 #include <boot/bootparams.h>
 #include "logger.h"
+#include "time.h"
 
 #include <arch/i686/rtc.h>
 
@@ -30,7 +31,13 @@ void __attribute__((section(".entry"))) start(BootParams* bootParams) {
     printf("H\033[1;33mello world f\033[0mrom kernel!!!\n");
     printf("%d\n", -1234567);
 
-    printf("%d:%d:%ds\n", rtc(RTC_HOURS), rtc(RTC_MINUTES), rtc(RTC_SECONDS));
+    printf("%d:%d:%ds\n", i686_RTC_get(RTC_HOUR), i686_RTC_get(RTC_MIN), i686_RTC_get(RTC_SEC));
+
+    struct tm time;
+    time_tm(&time);
+    char t[26];
+    asctime(t, 26, &time);
+    printf("%s", t);
 
 end:
     for (;;);

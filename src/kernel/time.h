@@ -26,8 +26,3 @@ time_t time(time_t* tloc);
 int asctime(char* buf, size_t bufsz, const struct tm* tm);
 
 size_t strftime(char* str, size_t count, const char* format, const struct tm* tm);
-// %%, \n, \t
-// Y, y
-// b, m
-// d, e, a, w
-// H, M, S

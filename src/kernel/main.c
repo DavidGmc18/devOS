@@ -35,9 +35,21 @@ void __attribute__((section(".entry"))) start(BootParams* bootParams) {
 
     struct tm time;
     time_tm(&time);
-    char t[26];
-    asctime(t, 26, &time);
-    printf("%s", t);
+    char asc[26] = "                    ";
+    asctime(asc, 1, &time);
+    printf("%s\n", asc);
+    asctime(asc, 26, &time);
+    printf("%s", asc);
+
+    char strf[64];
+    strf[63] = 'X';
+    strftime(strf, 64, "%Y:%y:%b%h%m:%j:%d:%a:%w:%Hh:%Ih:%Mm:%Ss--%x", &time);
+    printf("%s\n\n\n\n", strf);
+
+    char strf2[32];
+    printf("%s", asc);
+    strftime(strf2, 26, "%x", &time);
+    printf("%s", strf2);
 
 end:
     for (;;);

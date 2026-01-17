@@ -1,6 +1,7 @@
 #include "time.h"
 #include <arch/i686/rtc.h>
 #include <string.h>
+#include <stdbool.h>
 
 const uint16_t __month_days[12] = {
     31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
@@ -13,7 +14,7 @@ const uint16_t __year_to_month_days[12] = {
 #define IS_LEAP(year) ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
 
 // TODO isdst
-void __rtc_to_tm(RTC_time* rtc, struct tm* tm) {
+static void __rtc_to_tm(RTC_time* rtc, struct tm* tm) {
     tm->tm_sec = rtc->sec;
     tm->tm_min = rtc->min;
     tm->tm_hour = rtc->hour;
@@ -106,42 +107,150 @@ time_t time(time_t* tloc) {
     return time;
 }
 
-const char __week_day_name[7][3] = {
+static const char __week_day_name[7][3] = {
     "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
-const char __month_name[12][3] = {
+static const char __month_name[12][3] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-void __print_num(char* buffer, int num, int digits) {
-    for (int i = digits - 1; i >= 0; i--) {
-        buffer[i] = '0' + (num % 10);
-        num /= 10;
+static char __digits[16] = "0123456789ABCDEF";
+
+static void __print_unsigned(char* buf, int num, int size, int radix, const char* end) {
+    for (int i = size - 1; i >= 0; i--) {
+        if (buf + i < end) {
+            buf[i] = __digits[num % radix];
+        }
+        num /= radix;
     }
 }
 
+static int __asctime(char* buf, size_t bufsz, const struct tm* tm) {
+    if (0 < bufsz) strncpy(buf + 0, __week_day_name[tm->tm_wday], (3 < (bufsz - 0)) ? 3 : (bufsz - 0));
+    if (4 < bufsz) strncpy(buf + 4, __month_name[tm->tm_mon], (3 < (bufsz - 4)) ? 3 : (bufsz - 4));
+    __print_unsigned(buf + 8, tm->tm_mday, 2, 10, buf + bufsz);
+    __print_unsigned(buf + 11, tm->tm_hour, 2, 10, buf + bufsz);
+    __print_unsigned(buf + 14, tm->tm_min, 2, 10, buf + bufsz);
+    __print_unsigned(buf + 17, tm->tm_sec, 2, 10, buf + bufsz);
+    __print_unsigned(buf + 20, tm->tm_year + 1900, 4, 10, buf + bufsz);
+
+    if (3 < bufsz) buf[3]  = ' ';
+    if (7 < bufsz) buf[7]  = ' ';
+    if (10 < bufsz) buf[10] = ' ';
+    if (13 < bufsz) buf[13] = ':';
+    if (16 < bufsz) buf[16] = ':';
+    if (19 < bufsz) buf[19] = ' ';
+
+    return bufsz < 24 ? bufsz : 24;
+}
+
 int asctime(char* buf, size_t bufsz, const struct tm* tm) {
-    if (!buf || bufsz < ASCTIME_BUFSZ) {
-        return -1;
+    __asctime(buf, bufsz, tm);
+    if (24 < bufsz) buf[24] = '\n';
+    if (25 < bufsz) buf[25] = '\0';
+
+    return bufsz < 26 ? bufsz : 26;
+}
+
+size_t strftime(char* str, size_t count, const char* format, const struct tm* tm) {
+    bool specifier = false;
+    int i = 0;
+
+    while (*format && i < count) {
+        if (!specifier) {
+            switch (*format) {
+                case '%':
+                    specifier = true;
+                    break;
+
+                default:
+                    str[i++] = *format;
+                    break;
+            }
+        } else {
+            switch (*format) {
+                case '%':
+                    str[i++] = '%';
+                    break;
+
+                case 'Y':
+                    __print_unsigned(str+i, tm->tm_year+1900, 4, 10, str+count);
+                    i += 4;
+                    break;
+
+                case 'y':
+                    __print_unsigned(str+i, tm->tm_year+1900, 2, 10, str+count);
+                    i += 2;
+                    break;
+                
+                case 'b':
+                case 'h':
+                    for (int j = 0; j < 3 && i < count; j++) {
+                        str[i++] = __month_name[tm->tm_mon][j];
+                    }
+                    break;
+
+                case 'm':
+                    __print_unsigned(str+i, tm->tm_mon+1, 2, 10, str+count);
+                    i += 2;
+                    break;
+
+                case 'j':
+                    __print_unsigned(str+i, tm->tm_yday+1, 3, 10, str+count);
+                    i += 3;
+                    break;
+
+                case 'd':
+                    __print_unsigned(str+i, tm->tm_mday, 2, 10, str+count);
+                    i += 2;
+                    break;
+
+                case 'a':
+                    for (int j = 0; j < 3 && i < count; j++) {
+                        str[i++] = __week_day_name[tm->tm_wday][j];
+                    }
+                    break;
+
+                case 'w':
+                    __print_unsigned(str+i, tm->tm_wday, 1, 10, str+count);
+                    i += 1;
+                    break;
+
+                case 'H':
+                    __print_unsigned(str+i, tm->tm_hour, 2, 10, str+count);
+                    i += 2;
+                    break;
+                    
+                case 'I':
+                    __print_unsigned(str+i, ((tm->tm_hour+11)%12)+1, 2, 10, str+count);
+                    i += 2;
+                    break;
+
+                case 'M':
+                    __print_unsigned(str+i, tm->tm_min, 2, 10, str+count);
+                    i += 2;
+                    break;
+
+                case 'S':
+                    __print_unsigned(str+i, tm->tm_sec, 2, 10, str+count);
+                    i += 2;
+                    break;
+
+                case 'x':
+                    i += __asctime(str+i, count-i, tm);
+                    break;
+
+                default:
+                    str[i-1] = '%';
+                    str[i++] = *format;
+            }
+            specifier = false;
+        }
+        format++;
+
+        if (i < count) {
+            str[i] = '\0';
+        }
     }
-
-    strncpy(buf + 0, __week_day_name[tm->tm_wday], 3);
-    strncpy(buf + 4, __month_name[tm->tm_mon], 3);
-    __print_num(buf + 8, tm->tm_mday, 2);
-    __print_num(buf + 11, tm->tm_hour, 2);
-    __print_num(buf + 14, tm->tm_min, 2);
-    __print_num(buf + 17, tm->tm_sec, 2);
-    __print_num(buf + 20, tm->tm_year + 1900, 4);
-
-    buf[3]  = ' ';
-    buf[7]  = ' ';
-    buf[10] = ' ';
-    buf[13] = ':';
-    buf[16] = ':';
-    buf[19] = ' ';
-    buf[24] = '\n';
-    buf[25] = '\0';
-
-    return 0;
 }

@@ -14,6 +14,9 @@ size_t strlen(const char* str) {
 }
 
 char* strncpy(char *dst, const char *src, size_t count) {
+    if (count == 0) {
+        return dst;
+    }
     char* origDst = dst;
 
     if (dst == NULL) {

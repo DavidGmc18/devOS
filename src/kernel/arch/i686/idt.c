@@ -1,6 +1,5 @@
 #include "idt.h"
 #include <stdint.h>
-#include <util/binary.h>
 
 typedef struct {
     uint16_t BaseLow;
@@ -22,11 +21,11 @@ IDT_Descriptor g_IDT_Descriptor = {sizeof(g_IDT) - 1, g_IDT};
 void __attribute__((cdecl)) i686_IDT_Load(IDT_Descriptor* descriptor);
 
 void i686_IDT_EnableGate(uint8_t interrupt) {
-    FLAG_SET(g_IDT[interrupt].Flags, IDT_FLAG_PRESENT);
+    g_IDT[interrupt].Flags |= IDT_FLAG_PRESENT;
 }
 
-void i686_IDT_DisabkeGate(uint8_t interrupt) {
-    FLAG_UNSET(g_IDT[interrupt].Flags, IDT_FLAG_PRESENT);
+void i686_IDT_DisableGate(uint8_t interrupt) {
+    g_IDT[interrupt].Flags &= ~IDT_FLAG_PRESENT;
 }
 
 void i686_IDT_Initialize() {

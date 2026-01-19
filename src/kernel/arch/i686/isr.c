@@ -1,9 +1,9 @@
 #include "isr.h"
 #include "idt.h"
 #include "gdt.h"
-#include <stdio.h>
 #include <stddef.h>
 #include "io.h"
+#include "printk.h"
 
 ISR_Handler g_ISR_Handlers[256];
 
@@ -55,15 +55,15 @@ void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs) {
     if (g_ISR_Handlers[regs->interrupt] != NULL) {
         g_ISR_Handlers[regs->interrupt](regs);
     } else  if (regs->interrupt >= 32) {
-        printf("Unhandled interrupt %d!\n", regs->interrupt);
+        printk("Unhandled interrupt %d!\n", regs->interrupt);
     } else {
-        printf("Unhandled exception %d %s!\n", regs->interrupt, g_Exceptions[regs->interrupt]);
-        printf("  eax=%x  ebx=%x  ecx=%x  edx=%x  esi=%x  edi=%x\n",
+        printk("Unhandled exception %d %s!\n", regs->interrupt, g_Exceptions[regs->interrupt]);
+        printk("  eax=%x  ebx=%x  ecx=%x  edx=%x  esi=%x  edi=%x\n",
                regs->eax, regs->ebx, regs->ecx, regs->edx, regs->esi, regs->edi);
-        printf("  esp=%x  ebp=%x  eip=%x  eflags=%x  cs=%x  ds=%x  ss=%x\n",
+        printk("  esp=%x  ebp=%x  eip=%x  eflags=%x  cs=%x  ds=%x  ss=%x\n",
                regs->esp, regs->ebp, regs->eip, regs->eflags, regs->cs, regs->ds, regs->ss);
-        printf("  interrupt=%x  errorcode=%x\n", regs->interrupt, regs->error);
-        printf("KERNEL PANIC!\n");
+        printk("  interrupt=%x  errorcode=%x\n", regs->interrupt, regs->error);
+        printk("KERNEL PANIC!\n");
         i686_Panic();
     }
 }

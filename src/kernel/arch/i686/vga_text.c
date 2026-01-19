@@ -1,8 +1,6 @@
 #include "vga_text.h"
 #include "io.h"
-#include "logger.h"
 #include <stdbool.h>
-#include "string.h"
 
 uint16_t ScreenWidth;
 uint16_t ScreenHeight;
@@ -209,5 +207,26 @@ void VGA_putn(const char* str, size_t size) {
 }
 
 void VGA_puts(const char* str) {
-    VGA_putn(str, strlen(str));
+    for (size_t i = 0; str[i]; i++) {
+        // check for ANSI start
+        if (str[i] == '\033' && str[i+1] == '[') {
+            // find end
+            int end = 0;
+            for (int j = i+2; str[j]; j++) {
+                if (str[j] == 'm') {
+                    end = j;
+                    break;
+                }
+            }
+
+            // parse ANSI if end found
+            if (end != 0) {
+                VGA_parse_ANSI(str + i, end - i + 1);
+                i = end;
+                continue;
+            }
+        }
+
+        VGA_putc(str[i]);
+    }
 }

@@ -42,11 +42,15 @@ void __attribute__((section(".entry"))) start(BootParams* bootParams) {
     printf("%s", asc);
 
     char strf[64];
-    strf[63] = 'X';
     strftime(strf, 64, "%Y:%y:%b%h%m:%j:%d:%a:%w:%Hh:%Ih:%Mm:%Ss--%x", &time);
     printf("%s\n\n\n\n", strf);
 
     char strf2[32];
+
+    for (int i = 0; i < 32; i++) {
+        strf2[i] = 'X';
+    }
+
     printf("%s", asc);
     strftime(strf2, 26, "%x", &time);
     printf("%s", strf2);

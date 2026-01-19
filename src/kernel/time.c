@@ -248,9 +248,9 @@ size_t strftime(char* str, size_t count, const char* format, const struct tm* tm
             specifier = false;
         }
         format++;
+    }
 
-        if (i < count) {
-            str[i] = '\0';
-        }
+    if (i < count) {
+        str[i] = '\0';
     }
 }

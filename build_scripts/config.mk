@@ -17,8 +17,11 @@ export TARGET_CFLAGS = -std=c99 -g -O2 -I$(SOURCE_DIR)/src/libs -DDEBUG
 export TARGET_CC = $(TARGET)-gcc
 export TARGET_CXX = $(TARGET)-g++
 export TARGET_LD = $(TARGET)-gcc
+export TARGET_AR = $(TARGET)-ar
 export TARGET_LINKFLAGS =
 export TARGET_LIBS =
+
+export ARCH_i686_LIB = $(BUILD_DIR)/arch/i686.a
 
 BINUTILS_VERSION = 2.45.1
 BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar.xz

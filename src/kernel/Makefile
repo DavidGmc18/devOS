@@ -12,13 +12,13 @@ SOURCES_ASM = 	$(shell find . -type f -name "*.asm")
 OBJECTS_C = 	$(patsubst %.c, $(BUILD_DIR)/kernel/c/%.obj, $(SOURCES_C))
 OBJECTS_ASM = 	$(patsubst %.asm, $(BUILD_DIR)/kernel/asm/%.obj, $(SOURCES_ASM))
 
-.PHONY: all kernel clean always
+.PHONY: all kernel clean always $(ARCH_i686_LIB)
 
 all: kernel
 
 kernel: $(BUILD_DIR)/kernel.bin
 
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C)
+$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(ARCH_i686_LIB) 
 	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
 	@echo "--> Created:  kernel.bin"
 
@@ -31,6 +31,9 @@ $(BUILD_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
+
+$(ARCH_i686_LIB):
+	@$(MAKE) -C $(SOURCE_DIR)/src/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 clean:
 	rm -f $(BUILD_DIR)/kernel.bin

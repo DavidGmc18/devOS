@@ -1,6 +1,6 @@
 include build_scripts/config.mk
 
-.PHONY: all floppy_image kernel bootloader i686 clean always
+.PHONY: all floppy_image kernel bootloader clean always
 
 all: floppy_image
 
@@ -42,17 +42,8 @@ $(BUILD_DIR)/stage2.bin: always
 #
 kernel: $(BUILD_DIR)/kernel.bin
 
-$(BUILD_DIR)/kernel.bin: always i686
+$(BUILD_DIR)/kernel.bin: always
 	@$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
-
-
-#
-# arch/i686
-#
-i686: $(BUILD_DIR)/arch/i686.a
-
-$(BUILD_DIR)/arch/i686.a: always
-	@$(MAKE) -C src/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Always

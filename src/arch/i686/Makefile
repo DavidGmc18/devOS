@@ -1,6 +1,5 @@
 TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I.
-TARGET_LIBS += -lgcc
+TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I$(SOURCE_DIR)/src
 
 HEADERS_C = 	$(shell find . -type f -name "*.h")
 SOURCES_C = 	$(shell find . -type f -name "*.c")
@@ -11,29 +10,29 @@ SOURCES_ASM = 	$(shell find . -type f -name "*.asm")
 OBJECTS_C = 	$(patsubst %.c, $(BUILD_DIR)/arch/i686/c/%.o, $(SOURCES_C))
 OBJECTS_ASM = 	$(patsubst %.asm, $(BUILD_DIR)/arch/i686/asm/%.o, $(SOURCES_ASM))
 
-.PHONY: all i686 clean
+.PHONY: all i686 clean always
 
 all: i686
 
-i686: $(BUILD_DIR)/arch/i686.a
+i686: $(ARCH_i686_LIB)
 
-$(BUILD_DIR)/arch/i686.a: $(OBJECTS_ASM) $(OBJECTS_C) $(SOURCE_DIR)/src/arch/i686/isrs_gen.c
+$(ARCH_i686_LIB): $(OBJECTS_ASM) $(OBJECTS_C)
+	@mkdir -p $(@D)
 	@$(TARGET_AR) rcs $@ $^
-# 	@$(TARGET_RANLIB) $@
 	@echo "--> Created:  libkstd.a"
 
-$(BUILD_DIR)/arch/i686/c/%.o: %.c $(HEADERS_C)
+$(BUILD_DIR)/arch/i686/c/%.o: %.c $(HEADERS_C) isrs_gen.c
 	@mkdir -p $(@D)
-	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $< $(TARGET_LIBS)
+	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
-$(BUILD_DIR)/arch/i686/asm/%.o: %.asm $(HEADERS_ASM) $(SOURCE_DIR)/src/arch/i686/isrs_gen.inc
+$(BUILD_DIR)/arch/i686/asm/%.o: %.asm $(HEADERS_ASM) isrs_gen.inc
 	@mkdir -p $(@D)
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
 
-$(SOURCE_DIR)/src/arch/i686/isrs_gen.c $(SOURCE_DIR)/src/arch/i686/isrs_gen.inc:
+isrs_gen.c isrs_gen.inc:
 	@$(SOURCE_DIR)/build_scripts/generate_isrs.sh isrs_gen.c isrs_gen.inc
 
 clean:
-	rm -f $(BUILD_DIR)/arch/i686.a
+	rm -f $(ARCH_i686_LIB)

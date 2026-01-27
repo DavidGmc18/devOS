@@ -18,7 +18,7 @@ all: kernel
 
 kernel: libs $(BUILD_DIR)/kernel.bin
 
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(ARCH_i686_LIB) $(HAL_LIB) $(STD_LIB)
+$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(STD_LIB) $(HAL_LIB) $(ARCH_i686_LIB)
 	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
 	@echo "--> Created:  kernel.bin"
 

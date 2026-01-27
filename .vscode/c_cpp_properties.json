@@ -9,7 +9,8 @@
             "includePath": [
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/src/kernel",
-                "${workspaceFolder}/src/libs"
+                "${workspaceFolder}/src/libs",
+                "${workspaceFolder}/include/std"
             ],
             "defines": [
                 "__ELF__"

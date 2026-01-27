@@ -19,7 +19,7 @@ i686: $(ARCH_i686_LIB)
 $(ARCH_i686_LIB): $(OBJECTS_ASM) $(OBJECTS_C)
 	@mkdir -p $(@D)
 	@$(TARGET_AR) rcs $@ $^
-	@echo "--> Created:  libkstd.a"
+	@echo "--> Created:  arch/i686.a"
 
 $(BUILD_DIR)/arch/i686/c/%.o: %.c $(HEADERS_C) isrs_gen.c
 	@mkdir -p $(@D)

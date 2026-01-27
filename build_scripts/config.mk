@@ -1,5 +1,6 @@
 export SOURCE_DIR = $(abspath .)
 export BUILD_DIR = $(abspath build)
+export INCLUDE_DIR = $(abspath include)
 
 export CFLAGS = -std=c99 -g
 export ASMFLAGS =
@@ -22,6 +23,8 @@ export TARGET_LINKFLAGS =
 export TARGET_LIBS =
 
 export ARCH_i686_LIB = $(BUILD_DIR)/arch/i686.a
+export HAL_LIB = $(BUILD_DIR)/hal.a
+export STD_LIB = $(BUILD_DIR)/libc.a
 
 BINUTILS_VERSION = 2.45.1
 BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar.xz

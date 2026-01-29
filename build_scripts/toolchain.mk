@@ -1,7 +1,7 @@
 TOOLCHAIN_PREFIX = $(abspath toolchain/$(TARGET))
 export PATH := $(TOOLCHAIN_PREFIX)/bin:$(PATH)
 
-toolchain: toolchain_binutils toolchain_gcc
+toolchain: clean-toolchain-all toolchain_binutils toolchain_gcc
 
 BINUTILS_SRC = toolchain/binutils-$(BINUTILS_VERSION)
 BINUTILS_BUILD = toolchain/binutils-build-$(BINUTILS_VERSION)

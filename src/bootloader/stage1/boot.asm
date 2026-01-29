@@ -1,39 +1,9 @@
 org 0x7E00
 bits 16
 
+%include "../BPB.inc"
+
 %define ENDL 0x0D, 0x0A
-
-;
-; FAT12 header
-; 
-jmp short start
-nop
-
-bdb_oem:                    db 'MSWIN4.1'           ; 8 bytes
-bdb_bytes_per_sector:       dw 512
-bdb_sectors_per_cluster:    db 1
-bdb_reserved_sectors:       dw 2
-bdb_fat_count:              db 2
-bdb_dir_entries_count:      dw 0E0h
-bdb_total_sectors:          dw 2880                 ; 2880 * 512 = 1.44MB
-bdb_media_descriptor_type:  db 0F0h                 ; F0 = 3.5" floppy disk
-bdb_sectors_per_fat:        dw 9                    ; 9 sectors/fat
-bdb_sectors_per_track:      dw 18
-bdb_heads:                  dw 2
-bdb_hidden_sectors:         dd 0
-bdb_large_sector_count:     dd 0
-
-; extended boot record
-ebr_drive_number:           db 0                    ; 0x00 floppy, 0x80 hdd, useless
-                            db 0                    ; reserved
-ebr_signature:              db 29h
-ebr_volume_id:              db 12h, 34h, 56h, 78h   ; serial number, value doesn't matter
-ebr_volume_label:           db 'DAVIDAK OS '        ; 11 bytes, padded with spaces
-ebr_system_id:              db 'FAT12   '           ; 8 bytes
-
-;
-; Code goes here
-;
 
 start:
     ; setup data segments
@@ -55,7 +25,7 @@ start:
 
     ; read something from floppy disk
     ; BIOS should set DL to drive number
-    mov [ebr_drive_number], dl
+    mov [EBPB_drive_number], dl
 
     ; show loading message
     mov si, msg_loading
@@ -71,25 +41,25 @@ start:
 
     and cl, 0x3F                        ; remove top 2 bits
     xor ch, ch
-    mov [bdb_sectors_per_track], cx     ; sector count
+    mov [BPB_sectors_per_track], cx     ; sector count
 
     inc dh
-    mov [bdb_heads], dh                 ; head count
+    mov [BPB_head_count], dh                 ; head count
 
     ; compute LBA of root directory = reserved + fats * sectors_per_fat
     ; note: this section can be hardcoded
-    mov ax, [bdb_sectors_per_fat]
-    mov bl, [bdb_fat_count]
+    mov ax, [BPB_sectors_per_fat]
+    mov bl, [BPB_fat_count]
     xor bh, bh
     mul bx                              ; ax = (fats * sectors_per_fat)
-    add ax, [bdb_reserved_sectors]      ; ax = LBA of root directory
+    add ax, [BPB_reserved_sectors]      ; ax = LBA of root directory
     push ax
 
     ; compute size of root directory = (32 * number_of_entries) / bytes_per_sector
-    mov ax, [bdb_dir_entries_count]
+    mov ax, [BPB_root_dir_entries]
     shl ax, 5                           ; ax *= 32
     xor dx, dx                          ; dx = 0
-    div word [bdb_bytes_per_sector]     ; number of sectors we need to read
+    div word [BPB_bytes_per_sector]     ; number of sectors we need to read
 
     test dx, dx                         ; if dx != 0, add 1
     jz .root_dir_after
@@ -100,7 +70,7 @@ start:
     ; read root directory
     mov cl, al                          ; cl = number of sectors to read = size of root directory
     pop ax                              ; ax = LBA of root directory
-    mov dl, [ebr_drive_number]          ; dl = drive number (we saved it previously)
+    mov dl, [EBPB_drive_number]          ; dl = drive number (we saved it previously)
     mov bx, buffer                      ; es:bx = buffer
     call disk_read
 
@@ -118,7 +88,7 @@ start:
 
     add di, 32
     inc bx
-    cmp bx, [bdb_dir_entries_count]
+    cmp bx, [BPB_root_dir_entries]
     jl .search_kernel
 
     ; kernel not found
@@ -131,10 +101,10 @@ start:
     mov [stage2_cluster], ax
 
     ; load FAT from disk into memory
-    mov ax, [bdb_reserved_sectors]
+    mov ax, [BPB_reserved_sectors]
     mov bx, buffer
-    mov cl, [bdb_sectors_per_fat]
-    mov dl, [ebr_drive_number]
+    mov cl, [BPB_sectors_per_fat]
+    mov dl, [EBPB_drive_number]
     call disk_read
 
     ; read kernel and process FAT chain
@@ -151,10 +121,10 @@ start:
     add ax, 32                          ; first cluster = (stage2_cluster - 2) * sectors_per_cluster + start_sector
                                         ; start sector = reserved + fats + root directory size = 1 + 18 + 134 = 33
     mov cl, 1
-    mov dl, [ebr_drive_number]
+    mov dl, [EBPB_drive_number]
     call disk_read
 
-    add bx, [bdb_bytes_per_sector]
+    add bx, [BPB_bytes_per_sector]
 
     ; compute location of next cluster
     mov ax, [stage2_cluster]
@@ -187,7 +157,7 @@ start:
 .read_finish:
     
     ; jump to our kernel
-    mov dl, [ebr_drive_number]          ; boot device in dl
+    mov dl, [EBPB_drive_number]          ; boot device in dl
 
     mov ax, STAGE2_LOAD_SEGMENT         ; set segment registers
     mov ds, ax
@@ -273,14 +243,14 @@ lba_to_chs:
     push dx
 
     xor dx, dx                          ; dx = 0
-    div word [bdb_sectors_per_track]    ; ax = LBA / SectorsPerTrack
+    div word [BPB_sectors_per_track]    ; ax = LBA / SectorsPerTrack
                                         ; dx = LBA % SectorsPerTrack
 
     inc dx                              ; dx = (LBA % SectorsPerTrack + 1) = sector
     mov cx, dx                          ; cx = sector
 
     xor dx, dx                          ; dx = 0
-    div word [bdb_heads]                ; ax = (LBA / SectorsPerTrack) / Heads = cylinder
+    div word [BPB_head_count]                ; ax = (LBA / SectorsPerTrack) / Heads = cylinder
                                         ; dx = (LBA / SectorsPerTrack) % Heads = head
     mov dh, dl                          ; dh = head
     mov ch, al                          ; ch = cylinder (lower 8 bits)

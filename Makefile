@@ -15,7 +15,10 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
 	@dd if=/dev/zero of=$@ bs=512 count=2880 >/dev/null
 	@mkfs.fat -F 12 -R 2 -n "NBOS" $@ >/dev/null
 
-	@dd if=$(BUILD_DIR)/stage0.bin of=$@ conv=notrunc >/dev/null
+# 	Stage 0
+	@dd if=$(BUILD_DIR)/stage0.bin of=$@ bs=1 count=11 conv=notrunc >/dev/null
+	@dd if=$(BUILD_DIR)/stage0.bin of=$@ bs=1 skip=43 seek=43 conv=notrunc >/dev/null
+
 	@dd if=$(BUILD_DIR)/stage1.bin of=$@ seek=1 bs=512 conv=notrunc
 
 	@mcopy -i $@ $(BUILD_DIR)/stage2.bin "::stage2.bin"

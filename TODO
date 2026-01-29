@@ -1,2 +1,3 @@
 - fix CHS order in functions
 - TODO test printk
+- rename -> diskimage.dd

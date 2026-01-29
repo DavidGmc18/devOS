@@ -6,45 +6,9 @@ bits 16
 %define ENDL 0x0D, 0x0A
 
 start:
-    ; setup data segments
-    mov ax, 0           ; can't set ds/es directly
-    mov ds, ax
-    mov es, ax
-    
-    ; setup stack
-    mov ss, ax
-    mov sp, 0x7C00              ; stack grows downwards from where we are loaded in memory
-
-    ; some BIOSes might start us at 07C0:0000 instead of 0000:7C00, make sure we are in the
-    ; expected location
-    push es
-    push word .after
-    retf
-
-.after:
-
-    ; read something from floppy disk
-    ; BIOS should set DL to drive number
-    mov [EBPB_drive_number], dl
-
     ; show loading message
     mov si, msg_loading
     call puts
-
-    ; read drive parameters (sectors per track and head count),
-    ; instead of relying on data on formatted disk
-    push es
-    mov ah, 08h
-    int 13h
-    jc floppy_error
-    pop es
-
-    and cl, 0x3F                        ; remove top 2 bits
-    xor ch, ch
-    mov [BPB_sectors_per_track], cx     ; sector count
-
-    inc dh
-    mov [BPB_head_count], dh                 ; head count
 
     ; compute LBA of root directory = reserved + fats * sectors_per_fat
     ; note: this section can be hardcoded

@@ -5,120 +5,129 @@ bits 16
 
 %define ENDL 0x0D, 0x0A
 
-start:
-    ; show loading message
-    mov si, msg_loading
-    call puts
+STAGE2_LOAD_SEGMENT     equ 0x0
+STAGE2_LOAD_OFFSET      equ 0x500
 
-    ; compute LBA of root directory = reserved + fats * sectors_per_fat
-    ; note: this section can be hardcoded
+init:
+    ; ROOT_DIR_LBA = BPB_reserved_sectors + BPB_fat_count * BPB_sectors_per_fat
     mov ax, [BPB_sectors_per_fat]
-    mov bl, [BPB_fat_count]
-    xor bh, bh
-    mul bx                              ; ax = (fats * sectors_per_fat)
-    add ax, [BPB_reserved_sectors]      ; ax = LBA of root directory
-    push ax
+    xor cx, cx
+    mov cl, [BPB_fat_count]
+    mul cx
+    add ax, [BPB_reserved_sectors]
+    mov [ROOT_DIR_LBA], ax
 
-    ; compute size of root directory = (32 * number_of_entries) / bytes_per_sector
+    ; ROOT_SIZE = BPB_root_dir_entries * 32 / 512 (round up)
+    ;   = BPB_root_dir_entries / 16 (rounded up)
+    ;   = (BPB_root_dir_entries + 15) / 16
+    ; TODO hard coded BPB_bytes_per_sector (512)
     mov ax, [BPB_root_dir_entries]
-    shl ax, 5                           ; ax *= 32
-    xor dx, dx                          ; dx = 0
-    div word [BPB_bytes_per_sector]     ; number of sectors we need to read
+    add ax, 15
+    shr ax, 4
+    mov [ROOT_DIR_SIZE], ax    
+ 
+    ; DATA_REGION_LBA = ROOT_DIR_LBA + ROOT_SIZE
+    ; mov ax, [ROOT_DIR_SIZE]
+    add ax, [ROOT_DIR_LBA]
+    mov [DATA_REGION_LBA], ax
 
-    test dx, dx                         ; if dx != 0, add 1
-    jz .root_dir_after
-    inc ax                              ; division remainder != 0, add 1
-                                        ; this means we have a sector only partially filled with entries
-.root_dir_after:
-
-    ; read root directory
-    mov cl, al                          ; cl = number of sectors to read = size of root directory
-    pop ax                              ; ax = LBA of root directory
-    mov dl, [EBPB_drive_number]          ; dl = drive number (we saved it previously)
-    mov bx, buffer                      ; es:bx = buffer
+load_root_dir:
+    mov ax, [ROOT_DIR_LBA]
+    mov cl, [ROOT_DIR_SIZE]
+    mov dl, [EBPB_drive_number]
+    mov bx, buffer
     call disk_read
 
-    ; search for kernel.bin
-    xor bx, bx
+find_stage2:
+    xor bx, bx 
     mov di, buffer
-
-.search_kernel:
+    
+.loop:
     mov si, file_stage2_bin
-    mov cx, 11                          ; compare up to 11 characters
+    mov cx, 11
     push di
     repe cmpsb
     pop di
-    je .found_kernel
+    je .found
 
     add di, 32
     inc bx
     cmp bx, [BPB_root_dir_entries]
-    jl .search_kernel
+    jl .loop
+    
+    jmp stage2_not_found_error
 
-    ; kernel not found
-    jmp kernel_not_found_error
+.found:
+    mov ax, [di + 26]
+    mov [STAGE2_CLUSTER], ax
 
-.found_kernel:
-
-    ; di should have the address to the entry
-    mov ax, [di + 26]                   ; first logical cluster field (offset 26)
-    mov [stage2_cluster], ax
-
-    ; load FAT from disk into memory
-    mov ax, [BPB_reserved_sectors]
-    mov bx, buffer
+load_fat:
+    mov ax, [BPB_reserved_sectors] ; First FAT starts after reserved sectors
     mov cl, [BPB_sectors_per_fat]
     mov dl, [EBPB_drive_number]
+    mov bx, buffer
     call disk_read
 
-    ; read kernel and process FAT chain
+load_stage2:
     mov bx, STAGE2_LOAD_SEGMENT
     mov es, bx
     mov bx, STAGE2_LOAD_OFFSET
 
-.load_kernel_loop:
-    
-    ; Read next cluster
-    mov ax, [stage2_cluster]
-    
-    ; not nice :( hardcoded value
-    add ax, 32                          ; first cluster = (stage2_cluster - 2) * sectors_per_cluster + start_sector
-                                        ; start sector = reserved + fats + root directory size = 1 + 18 + 134 = 33
-    mov cl, 1
+; TODO test with BPB_sectors_per_cluster bieng more than 1
+.loop:
+    ; ; Compute LBA
+    ; ; LBA = (STAGE2_CLUSTER - 2) * BPB_sectors_per_cluster + DATA_REGION_LBA
+    mov ax, [STAGE2_CLUSTER]
+    sub ax, 2
+    xor cx, cx
+    mov cl, [BPB_sectors_per_cluster]
+    mul cx
+    add ax, [DATA_REGION_LBA]
+
+    ; Load
+    ; ax - LBA
+    mov cl, [BPB_sectors_per_cluster]
     mov dl, [EBPB_drive_number]
+    ; bx - memory address where to store data
     call disk_read
 
-    add bx, [BPB_bytes_per_sector]
+    ; Increment bx
+    ; bx += BPB_bytes_per_sector * BPB_sectors_per_cluster
+    mov ax, [BPB_bytes_per_sector]
+    mov cx, [BPB_sectors_per_cluster]
+    mul cx
+    add bx, ax 
 
-    ; compute location of next cluster
-    mov ax, [stage2_cluster]
+    ; Next Cluster
+    ; NEXT_CLUSTER = FAT[STAGE2_CLUSTER * 1.5] (read 1.5byte)
+    mov ax, [STAGE2_CLUSTER]
     mov cx, 3
     mul cx
     mov cx, 2
-    div cx                              ; ax = index of entry in FAT, dx = cluster mod 2
+    div cx
 
     mov si, buffer
     add si, ax
-    mov ax, [ds:si]                     ; read entry from FAT table at index ax
+    mov ax, [ds:si]
 
-    or dx, dx
+    or dx, dx ; check for remaineder => oven or odd
     jz .even
 
 .odd:
     shr ax, 4
-    jmp .next_cluster_after
+    jmp .next_cluster
 
 .even:
     and ax, 0x0FFF
 
-.next_cluster_after:
-    cmp ax, 0x0FF8                      ; end of chain
-    jae .read_finish
+.next_cluster:
+    cmp ax, 0x0FF8
+    jae read_finish
 
-    mov [stage2_cluster], ax
-    jmp .load_kernel_loop
+    mov [STAGE2_CLUSTER], ax
+    jmp .loop
 
-.read_finish:
+read_finish:
     
     ; jump to our kernel
     mov dl, [EBPB_drive_number]          ; boot device in dl
@@ -144,7 +153,7 @@ floppy_error:
     call puts
     jmp wait_key_and_reboot
 
-kernel_not_found_error:
+stage2_not_found_error:
     mov si, msg_stage2_not_found
     call puts
     jmp wait_key_and_reboot
@@ -293,18 +302,18 @@ disk_reset:
     popa
     ret
 
+ROOT_DIR_LBA: dw 0
+ROOT_DIR_SIZE: dw 0
+DATA_REGION_LBA: dw 0
+STAGE2_CLUSTER: dw 0
 
-msg_loading:            db 'Loading...', ENDL, 0
-msg_read_failed:        db 'Read from disk failed!', ENDL, 0
+msg_read_failed: db 'Read from disk failed!', ENDL, 0
+file_stage2_bin: db 'STAGE2  BIN'
 msg_stage2_not_found:   db 'STAGE2.BIN file not found!', ENDL, 0
-file_stage2_bin:        db 'STAGE2  BIN'
-stage2_cluster:         dw 0
 
-STAGE2_LOAD_SEGMENT     equ 0x0
-STAGE2_LOAD_OFFSET      equ 0x500
+msg_assert_valid: db 'VALID!', ENDL, 0
+msg_assert_fail: db 'FAIL!', ENDL, 0
 
-
-times 510-($-$$) db 0
-dw 0AA55h
+times 512-($-$$) db 0
 
 buffer:

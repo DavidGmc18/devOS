@@ -8,7 +8,7 @@ bits 16
 jmp short start
 nop
 
-OEM: db 'DAVIDAK '
+OEM_ID: db 'DAVIDAK '
 BiosParameterBlock
 ExtendedBiosParameterBlock
 

@@ -181,7 +181,7 @@ read_finish:
 ; Error handlers
 ;
 
-floppy_error:
+disk_error:
     mov si, msg_read_failed
     call puts
     jmp wait_key_and_reboot
@@ -329,7 +329,7 @@ disk_read:
 
 .fail:
     ; all attempts are exhausted
-    jmp floppy_error
+    jmp disk_error
 
 .done:
     popa
@@ -352,7 +352,7 @@ disk_reset:
     mov ah, 0
     stc
     int 13h
-    jc floppy_error
+    jc disk_error
     popa
     ret
 

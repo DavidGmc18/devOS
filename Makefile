@@ -1,17 +1,17 @@
 include build_scripts/config.mk
 
-.PHONY: all floppy_image kernel bootloader clean always
+.PHONY: all disk_image kernel bootloader clean always
 
-all: floppy_image
+all: disk_image
 
 include build_scripts/toolchain.mk
 
 #
-# Floppy image
+# Disk image
 #
-floppy_image: $(BUILD_DIR)/main_floppy.img
+disk_image: $(BUILD_DIR)/diskimage.dd
 
-$(BUILD_DIR)/main_floppy.img: bootloader kernel
+$(BUILD_DIR)/diskimage.dd: bootloader kernel
 	@dd if=/dev/zero of=$@ bs=512 count=8192 >/dev/null
 	@mkfs.fat -F 16 -R 3 -s 1 -n "NBOS" $@ >/dev/null
 

@@ -30,7 +30,7 @@ start:
     retf
 
 .after:
-    ; read something from floppy disk
+    ; read something from disk
     ; BIOS should set DL to drive number
     mov [EBPB_drive_number], dl
 
@@ -39,7 +39,7 @@ start:
     push es
     mov ah, 08h
     int 13h
-    jc floppy_error
+    jc disk_error
     pop es
 
     and cl, 0x3F                        ; remove top 2 bits
@@ -94,7 +94,7 @@ load_stage1:
 ; Error handlers
 ;
 
-floppy_error:
+disk_error:
     mov si, msg_read_failed
     call puts
     jmp wait_key_and_reboot
@@ -242,7 +242,7 @@ disk_read:
 
 .fail:
     ; all attempts are exhausted
-    jmp floppy_error
+    jmp disk_error
 
 .done:
     popa
@@ -264,7 +264,7 @@ disk_reset:
     mov ah, 0
     stc
     int 13h
-    jc floppy_error
+    jc disk_error
     popa
     ret
 

@@ -6,6 +6,7 @@
 #include "ctype.h"
 #include <stddef.h>
 #include "minmax.h"
+#include <BPB.h>
 
 #define SECTOR_SIZE             512
 #define MAX_PATH_SIZE           256
@@ -183,14 +184,20 @@ FAT_File* FAT_OpenEntry(DISK* disk, FAT_DirectoryEntry* entry)
     return &fd->Public;
 }
 
-uint32_t FAT_NextCluster(uint32_t currentCluster)
-{    
-    uint32_t fatIndex = currentCluster * 3 / 2;
+uint32_t FAT_NextCluster(uint32_t currentCluster) {
+    if (MDB->filesystem == FS_FAT12) {    
+        uint32_t fatIndex = currentCluster * 3 / 2;
 
-    if (currentCluster % 2 == 0)
-        return (*(uint16_t*)(g_Fat + fatIndex)) & 0x0FFF;
-    else
-        return (*(uint16_t*)(g_Fat + fatIndex)) >> 4;
+        if (currentCluster % 2 == 0) {
+            return (*(uint16_t*)(g_Fat + fatIndex)) & 0x0FFF;
+        } else {
+            return (*(uint16_t*)(g_Fat + fatIndex)) >> 4;
+        }
+    } else if (MDB->filesystem == FS_FAT16) {
+        uint32_t fatIndex = currentCluster * 2;
+        return (*(uint16_t*)(g_Fat + fatIndex));
+    }
+    printf("FAT: unknown file system!\r\n");
 }
 
 uint32_t FAT_Read(DISK* disk, FAT_File* file, uint32_t byteCount, void* dataOut)
@@ -241,8 +248,9 @@ uint32_t FAT_Read(DISK* disk, FAT_File* file, uint32_t byteCount, void* dataOut)
                     fd->CurrentCluster = FAT_NextCluster(fd->CurrentCluster);
                 }
 
-                if (fd->CurrentCluster >= 0xFF8)
-                {
+                if ((fd->CurrentCluster >= 0x0FF8 && MDB->filesystem == FS_FAT12)
+                    || (fd->CurrentCluster >= 0xFFF8 && MDB->filesystem == FS_FAT16)
+                ) {
                     // Mark end of file
                     fd->Public.Size = fd->Public.Position;
                     break;

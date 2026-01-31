@@ -165,10 +165,6 @@ next_cluster_FAT16:
     jmp load_loop
 
 read_finish:
-    ; TODO remove this, use EBPB_drive_number
-    ; jump to our kernel
-    mov dl, [EBPB_drive_number]          ; boot device in dl
-
     mov ax, STAGE2_LOAD_SEGMENT         ; set segment registers
     mov ds, ax
     mov es, ax

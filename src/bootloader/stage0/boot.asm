@@ -30,7 +30,6 @@ start:
     retf
 
 .after:
-
     ; read something from floppy disk
     ; BIOS should set DL to drive number
     mov [EBPB_drive_number], dl

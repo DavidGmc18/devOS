@@ -1,5 +1,7 @@
 bits 16
 
+%include "../BPB.inc"
+
 section .entry
 
 extern __bss_start
@@ -10,9 +12,6 @@ global entry
 
 entry:
     cli
-
-    ; save boot drive
-    mov [g_BootDrive], dl
 
     ; setup stack
     mov ax, ds
@@ -51,7 +50,7 @@ entry:
 
     ; expect boot drive in dl, send it as argument to cstart function
     xor edx, edx
-    mov dl, [g_BootDrive]
+    mov dl, [EBPB_drive_number]
     push edx
     call start
 

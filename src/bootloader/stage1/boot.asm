@@ -31,6 +31,25 @@ init:
     add ax, [ROOT_DIR_LBA]
     mov [DATA_REGION_LBA], ax
 
+detect_filesystem:
+    ; CountofClusters = DataSec / BPB_SecPerClus
+    mov ax, [BPB_total_sectors]
+    sub ax, [DATA_REGION_LBA]
+    xor cx, cx
+    mov cl, [BPB_sectors_per_cluster]
+    xor dx, dx
+    div cx
+    ; FAT12 volume cannot contain more than 4084 clusters
+    cmp word ax, 4085
+    jae .set_FAT16
+
+.set_FAT12:
+    mov byte [MDB_filesystem], FS_FAT12
+    jmp load_root_dir
+
+.set_FAT16:
+    mov byte [MDB_filesystem], FS_FAT16
+
 load_root_dir:
     mov ax, [ROOT_DIR_LBA]
     mov cl, [ROOT_DIR_SIZE]
@@ -98,14 +117,8 @@ load_loop:
     add bx, ax 
 
     ; FAT12 or FAT16?
-    mov ax, [BPB_total_sectors]
-    sub ax, [DATA_REGION_LBA] ; - 98
-    xor cx, cx
-    mov cl, [BPB_sectors_per_cluster]
-    xor dx, dx
-    div cx
-    cmp word ax, 4085
-    jae next_cluster_FAT16
+    cmp byte [MDB_filesystem], FS_FAT16
+    je next_cluster_FAT16
 
 next_cluster_FAT12:
     ; NEXT_CLUSTER = FAT[STAGE2_CLUSTER * 1.5] (read 1.5byte)
@@ -152,7 +165,7 @@ next_cluster_FAT16:
     jmp load_loop
 
 read_finish:
-    
+    ; TODO remove this, use EBPB_drive_number
     ; jump to our kernel
     mov dl, [EBPB_drive_number]          ; boot device in dl
 
@@ -334,9 +347,6 @@ STAGE2_CLUSTER: dw 0
 msg_read_failed: db 'Read from disk failed!', ENDL, 0
 file_stage2_bin: db 'STAGE2  BIN'
 msg_stage2_not_found:   db 'STAGE2.BIN file not found!', ENDL, 0
-
-msg_assert_valid: db 'VALID!', ENDL, 0
-msg_assert_fail: db 'FAIL!', ENDL, 0
 
 buffer:
 

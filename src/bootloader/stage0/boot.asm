@@ -11,6 +11,7 @@ nop
 OEM_ID: db 'DAVIDAK '
 BiosParameterBlock
 ExtendedBiosParameterBlock
+MetaDataBlock
 
 start:
     ; setup data segments
@@ -53,7 +54,7 @@ start:
     inc dh
     mov [BPB_head_count], dh                 ; head count
 
-.root_dir_after:
+load_stage1:
     add ax, 1
     mov cl, 1
     mov dl, [EBPB_drive_number]
@@ -63,10 +64,6 @@ start:
     call disk_read
 
 .read_finish:
-    
-    ; jump to our kernel
-    mov dl, [EBPB_drive_number]          ; boot device in dl
-
     mov ax, STAGE1_LOAD_SEGMENT         ; set segment registers
     mov ds, ax
     mov es, ax

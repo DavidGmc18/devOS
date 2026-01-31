@@ -5,11 +5,12 @@ ASM?=nasm
 
 all: stage0
 
-stage0: $(BUILD_DIR)/stage0.bin
+stage0: $(BUILD_DIR)/bootloader/stage0.bin
 
-$(BUILD_DIR)/stage0.bin: boot.asm
+$(BUILD_DIR)/bootloader/stage0.bin: boot.asm ../BPB.inc
+	@mkdir -p $(@D)
 	@$(ASM) $< -f bin -o $@
 	@echo "--> Created  stage0.bin"
 
 clean:
-	@rm -f $(BUILD_DIR)/stage0.bin
+	@rm -f $(BUILD_DIR)/bootloader/stage0.bin

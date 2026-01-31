@@ -34,10 +34,6 @@ start:
     ; BIOS should set DL to drive number
     mov [EBPB_drive_number], dl
 
-    ; show loading message
-    mov si, msg_loading
-    call puts
-
     ; read drive parameters (sectors per track and head count),
     ; instead of relying on data on formatted disk
     push es
@@ -53,10 +49,29 @@ start:
     inc dh
     mov [BPB_head_count], dh                 ; head count
 
-load_stage1:
-    add ax, 1
-    mov cl, 1
+detect_disk_type:
+    mov ah, 41h
     mov dl, [EBPB_drive_number]
+    mov bx, 0x55AA
+    int 13h
+
+    cmp bx, 0xAA55
+    jne .no_DAP
+
+    and cx, 1
+    cmp cx, 1
+    jne .no_DAP
+
+    ; DAP
+    mov byte [MDB_disk_address_packet], 1
+    jmp load_stage1
+
+.no_DAP:
+    mov byte [MDB_disk_address_packet], 0
+
+load_stage1:
+    mov ax, 1
+    mov cl, 2
     mov bx, STAGE1_LOAD_SEGMENT
     mov es, bx
     mov bx, STAGE1_LOAD_OFFSET
@@ -176,22 +191,43 @@ lba_to_chs:
 ;   - es:bx: memory address where to store read data
 ;
 disk_read:
-
     push ax                             ; save registers we will modify
     push bx
     push cx
     push dx
     push di
 
+    cmp byte [MDB_disk_address_packet], 1
+    jne .no_DAP
+
+    mov word [DAP_LBA], ax
+    mov word [DAP_LBA+2], 0
+    mov dword [DAP_LBA+4], 0
+
+    mov byte [DAP_sectors], cl
+    mov byte [DAP_sectors+2], 0
+
+    mov word [DAP_offset], bx
+    mov word [DAP_segment], es 
+
+    mov ah, 42h
+
+    jmp .read
+
+.no_DAP:
     push cx                             ; temporarily save CL (number of sectors to read)
     call lba_to_chs                     ; compute CHS
     pop ax                              ; AL = number of sectors to read
-    
+
     mov ah, 02h
+
+.read:
+    mov dl, [EBPB_drive_number]
     mov di, 3                           ; retry count
 
 .retry:
     pusha                               ; save all registers, we don't know what bios modifies
+    mov si, DAP
     stc                                 ; set carry flag, some BIOS'es don't set it
     int 13h                             ; carry flag cleared = success
     jnc .done                           ; jump if carry not set
@@ -218,7 +254,6 @@ disk_read:
     pop ax                             ; restore registers modified
     ret
 
-
 ;
 ; Resets disk controller
 ; Parameters:
@@ -233,18 +268,27 @@ disk_reset:
     popa
     ret
 
-
-msg_loading:            db 'Loading...', ENDL, 0
-msg_read_failed:        db 'Read from disk failed!', ENDL, 0
-msg_stage1_not_found:   db 'STAGE1.BIN file not found!', ENDL, 0
+msg_read_failed:        db 'Read from disk failed', ENDL, 0
+msg_stage1_not_found:   db 'STAGE1.BIN file not found', ENDL, 0
 file_stage1_bin:        db 'STAGE1  BIN'
 stage1_cluster:         dw 0
+
+DAP:
+    db 0x10
+    db 0
+    DAP_sectors: dw 0
+    DAP_offset: dw 0
+    DAP_segment: dw 0
+    DAP_LBA: dq 0
 
 STAGE1_LOAD_SEGMENT     equ 0x0
 STAGE1_LOAD_OFFSET      equ 0x7E00
 
+times 446-($-$$) db 0
 
-times 510-($-$$) db 0
-dw 0AA55h
+; MBR
+times 64 db 0
+
+dw 0xAA55
 
 buffer:

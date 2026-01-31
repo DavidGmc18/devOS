@@ -28,6 +28,7 @@ static const _EBPB* const EBPB = (const _EBPB*)0x7C24;
 
 typedef struct {
     const uint8_t filesystem;           // 0x7C2B
+    const uint8_t disk_address_packet;  // 0x7C2C
 } __attribute__((packed)) _MDB;
 static const _MDB* const MDB = (const _MDB*)0x7C2B;
 

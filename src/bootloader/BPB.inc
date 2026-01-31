@@ -27,9 +27,11 @@ EBPB_volume_id:             equ 0x7C27  ; 4B
 
 
 %macro MetaDataBlock 0
-    times 1 db 0
+    times 2 db 0
 %endmacro
 
 MDB_filesystem:             equ 0x7C2B  ; 1B
-%define FS_FAT12 0
-%define FS_FAT16 1
+MDB_disk_address_packet:    equ 0x7C2C  ; 1B
+
+%define FS_FAT12    0
+%define FS_FAT16    1

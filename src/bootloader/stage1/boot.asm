@@ -73,10 +73,9 @@ load_stage2:
     mov es, bx
     mov bx, STAGE2_LOAD_OFFSET
 
-; TODO test with BPB_sectors_per_cluster bieng more than 1
-.loop:
-    ; ; Compute LBA
-    ; ; LBA = (STAGE2_CLUSTER - 2) * BPB_sectors_per_cluster + DATA_REGION_LBA
+load_loop:
+    ; Compute LBA
+    ; LBA = (STAGE2_CLUSTER - 2) * BPB_sectors_per_cluster + DATA_REGION_LBA
     mov ax, [STAGE2_CLUSTER]
     sub ax, 2
     xor cx, cx
@@ -98,7 +97,17 @@ load_stage2:
     mul cx
     add bx, ax 
 
-    ; Next Cluster
+    ; FAT12 or FAT16?
+    mov ax, [BPB_total_sectors]
+    sub ax, [DATA_REGION_LBA] ; - 98
+    xor cx, cx
+    mov cl, [BPB_sectors_per_cluster]
+    xor dx, dx
+    div cx
+    cmp word ax, 4085
+    jae next_cluster_FAT16
+
+next_cluster_FAT12:
     ; NEXT_CLUSTER = FAT[STAGE2_CLUSTER * 1.5] (read 1.5byte)
     mov ax, [STAGE2_CLUSTER]
     mov cx, 3
@@ -125,7 +134,22 @@ load_stage2:
     jae read_finish
 
     mov [STAGE2_CLUSTER], ax
-    jmp .loop
+    jmp load_loop
+
+next_cluster_FAT16:
+    ; NEXT_CLUSTER = FAT[STAGE2_CLUSTER * 2] (read word)
+    mov ax, [STAGE2_CLUSTER]
+    shl ax, 1
+
+    mov si, buffer
+    add si, ax
+    mov ax, [ds:si]
+
+    cmp ax, 0xFFF8
+    jae read_finish
+
+    mov [STAGE2_CLUSTER], ax
+    jmp load_loop
 
 read_finish:
     
@@ -314,6 +338,6 @@ msg_stage2_not_found:   db 'STAGE2.BIN file not found!', ENDL, 0
 msg_assert_valid: db 'VALID!', ENDL, 0
 msg_assert_fail: db 'FAIL!', ENDL, 0
 
-times 512-($-$$) db 0
-
 buffer:
+
+times 512-($-$$) db 0

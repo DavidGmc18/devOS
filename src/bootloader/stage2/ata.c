@@ -94,9 +94,9 @@ int ATA_soft_reset(uint16_t bus) {
     return ATA_ERRC_SUCCESS;
 }
 
-int ATA_identify(uint16_t drive, void* buffer) {
-    uint16_t bus = drive >> 1;
-    uint8_t slave_bit = (drive & 1) << 4;
+int ATA_identify(uint16_t disk, void* buffer) {
+    uint16_t bus = disk >> 1;
+    uint8_t slave_bit = (disk & 1) << 4;
     uint16_t base = get_base(bus);
     if (!base) return ATA_ERRC_INVALID_BASE;
 
@@ -164,14 +164,14 @@ int ATA_identify(uint16_t drive, void* buffer) {
     }
 
     if (mid != 0 || high != 0)
-        return ATA_ERRC_NOT_ATA_DRIVE;
+        return ATA_ERRC_NOT_ATA_DISK;
 
     return ATA_ERRC_SUCCESS;
 }
 
-int ATA_read28(uint16_t drive, uint32_t LBA, uint8_t sectors, void* buffer) {
-    uint16_t bus = drive >> 1;
-    uint8_t slave_bit = (drive & 1) << 4;
+int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
+    uint16_t bus = disk >> 1;
+    uint8_t slave_bit = (disk & 1) << 4;
     uint16_t base = get_base(bus);
     if (!base) return ATA_ERRC_INVALID_BASE;
 

@@ -1,11 +1,12 @@
 #include <stdint.h>
-#include "stdio.h"
 #include "fat.h"
 #include "memdefs.h"
-#include "memory.h"
+#include <memory.h>
 #include <boot/bootparams.h>
 #include "memdetect.h"
 #include "ata.h"
+#include <arch/i686/vga_text.h>
+#include <arch/i686/printk.h>
 
 uint8_t* KernelLoadBuffer = (uint8_t*)MEMORY_LOAD_KERNEL;
 uint8_t* Kernel = (uint8_t*)MEMORY_KERNEL_ADDR;
@@ -16,13 +17,14 @@ typedef void (*KernelStart)(BootParams* bootParams);
 
 void __attribute__((cdecl)) start(uint16_t bootDrive)
 {
-    clrscr();
+    VGA_Initialize(80, 25, (uint8_t*)0xB8000);
+    VGA_clrscr();
 
     // TODO we naively assume boot dirve is ATA:0 disk
 
     if (!FAT_Initialize(0))
     {
-        printf("FAT init error\r\n");
+        printk("FAT init error\r\n");
         goto end;
     }
 

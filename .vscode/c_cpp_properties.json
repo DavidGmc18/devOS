@@ -21,7 +21,12 @@
             ],
             "browse": {
                 "path": [
-                    "${workspaceFolder}/src"
+                    "${workspaceFolder}/arch",
+                    "${workspaceFolder}/bootloader",
+                    "${workspaceFolder}/hal",
+                    "${workspaceFolder}/include",
+                    "${workspaceFolder}/kernel",
+                    "${workspaceFolder}/lib"
                 ],
                 "limitSymbolsToIncludedHeaders": true
             }

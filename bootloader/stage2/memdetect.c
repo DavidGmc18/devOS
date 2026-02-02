@@ -1,6 +1,7 @@
 #include "memdetect.h"
 #include "e820.h"
-#include "stdio.h"
+#include <arch/i686/printk.h>
+#include <string.h>
 
 #define MAX_REGIONS 256
 
@@ -23,7 +24,7 @@ void Memory_Detect(MemoryInfo* memoryInfo) {
         g_MemRegions[g_MemRegionCount].ACPI = block.ACPI;
         g_MemRegionCount++;
 
-        printf("E820: base=0x%llx length=0x%llx type=0x%x\n", block.Base, block.Length, block.Type);
+        printk("E820: base=0x%llx length=0x%llx type=0x%x\n", block.Base, block.Length, block.Type);
 
         ret = i686_E820GetNextBlock(&block, &continuation);
     }

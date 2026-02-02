@@ -1,6 +1,6 @@
 #include "ata.h"
-#include "io.h"
-#include "stdio.h"
+#include <arch/i686/io.h>
+#include <arch/i686/printk.h>
 
 // ATA I/O port offsets
 #define ATA_REG_DATA        0x0   // Data Register (16-bit)
@@ -45,7 +45,7 @@ uint16_t ATA_BUSES[ATA_BUSES_LEN] = {
 
 uint16_t get_base(uint16_t bus) {
     if (bus >= ATA_BUSES_LEN) {
-        printf("ATA: Invalid bus 0x%x\n", bus);
+        printk("ATA: Invalid bus 0x%x\n", bus);
         return 0; // TODO define NULL
     }
 
@@ -82,12 +82,12 @@ int ATA_soft_reset(uint16_t bus) {
 
     if (status & ATA_SR_ERR) {
         uint8_t error = i686_inb(base + ATA_REG_ERROR);
-        printf("ATA: Error 0x%x\n", error);
+        printk("ATA: Error 0x%x\n", error);
         return ATA_ERRC_SR_ERR;
     }
 
     if (timeout <= 0) {
-        printf("ATA: Timedout!\n");
+        printk("ATA: Timedout!\n");
         return ATA_ERRC_TIMED_OUT; 
     }
 
@@ -116,7 +116,7 @@ int ATA_identify(uint16_t disk, void* buffer) {
     uint8_t status = i686_inb(base + ATA_REG_STATUS);
 
     if (status == 0 || status == 0xFF) {
-        printf("ATA: Floating bus 0x%x\n", bus);
+        printk("ATA: Floating bus 0x%x\n", bus);
         return ATA_ERRC_FLOATING_BUS;
     }
 
@@ -129,12 +129,12 @@ int ATA_identify(uint16_t disk, void* buffer) {
 
     if (status & ATA_SR_ERR) {
         uint8_t error = i686_inb(base + ATA_REG_ERROR);
-        printf("ATA: Error 0x%x\n", error);
+        printk("ATA: Error 0x%x\n", error);
         return ATA_ERRC_SR_ERR;
     }
 
     if (timeout <= 0) {
-        printf("ATA: Timedout!\n");
+        printk("ATA: Timedout!\n");
         return ATA_ERRC_TIMED_OUT; 
     }
 
@@ -150,12 +150,12 @@ int ATA_identify(uint16_t disk, void* buffer) {
 
     if (status & ATA_SR_ERR) {
         uint8_t error = i686_inb(base + ATA_REG_ERROR);
-        printf("ATA: Error 0x%x\n", error);
+        printk("ATA: Error 0x%x\n", error);
         return ATA_ERRC_SR_ERR;
     }
 
     if (timeout <= 0) {
-        printf("ATA: Timedout!\n");
+        printk("ATA: Timedout!\n");
         return ATA_ERRC_TIMED_OUT; 
     }
 
@@ -185,13 +185,13 @@ int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
 
     uint8_t status = i686_inb(base + ATA_REG_STATUS);
     if (status == 0xFF || status == 0) {
-        printf("ATA: Floating bus 0x%x\n", bus);
+        printk("ATA: Floating bus 0x%x\n", bus);
         return ATA_ERRC_FLOATING_BUS;
     }
 
     if (status & ATA_SR_ERR) {
         uint8_t error = i686_inb(base + ATA_REG_ERROR);
-        printf("ATA: Error 0x%x\n", error);
+        printk("ATA: Error 0x%x\n", error);
         return ATA_ERRC_SR_ERR;
     }
 
@@ -206,12 +206,12 @@ int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
 
         if (status & ATA_SR_ERR) {
             uint8_t error = i686_inb(base + ATA_REG_ERROR);
-            printf("ATA: Error 0x%x\n", error);
+            printk("ATA: Error 0x%x\n", error);
             return ATA_ERRC_SR_ERR;
         }
 
         if (timeout <= 0) {
-            printf("ATA: Timedout!\n");
+            printk("ATA: Timedout!\n");
             // TODO should we soft reset?
             return ATA_ERRC_TIMED_OUT; 
         }

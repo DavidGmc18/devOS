@@ -11,7 +11,7 @@ include build_scripts/toolchain.mk
 #
 disk_image: $(BUILD_DIR)/diskimage.dd
 
-$(BUILD_DIR)/diskimage.dd: bootloader kernel
+$(BUILD_DIR)/diskimage.dd: deps bootloader kernel
 	@dd if=/dev/zero of=$@ bs=512 count=8192 >/dev/null
 	@mkfs.fat -F 16 -R 3 -s 1 -n "NBOS" $@ >/dev/null
 
@@ -24,6 +24,15 @@ $(BUILD_DIR)/diskimage.dd: bootloader kernel
 	@mcopy -i $@ $(BUILD_DIR)/bootloader/stage2.bin "::stage2.bin"
 	@mcopy -i $@ $(BUILD_DIR)/kernel.bin "::kernel.bin"
 	@echo "--> Created: " $@
+
+
+#
+# Dependencies
+#
+deps:
+	@$(MAKE) -C $(SOURCE_DIR)/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C $(SOURCE_DIR)/hal BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C $(SOURCE_DIR)/lib BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Bootloader

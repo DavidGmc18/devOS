@@ -13,7 +13,7 @@ OBJECTS_ASM = 	$(patsubst %.asm, $(BUILD_DIR)/kernel/asm/%.o, $(SOURCES_ASM))
 
 all: kernel
 
-kernel: libs $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(LIBC) $(HAL_LIB) $(ARCH_i686_LIB)
 	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
@@ -28,11 +28,6 @@ $(BUILD_DIR)/kernel/asm/%.o: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
-
-libs:
-	@$(MAKE) -C $(SOURCE_DIR)/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/hal BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/lib BUILD_DIR=$(abspath $(BUILD_DIR))
 
 clean:
 	@rm -f $(BUILD_DIR)/kernel.bin

@@ -1,12 +1,12 @@
 #include "fat.h"
-#include "stdio.h"
 #include "memdefs.h"
-#include "string.h"
-#include "memory.h"
+#include <string.h>
+#include <memory.h>
 #include "ctype.h"
 #include <stddef.h>
 #include "minmax.h"
 #include <BPB.h>
+#include <arch/i686/printk.h>
 
 #define SECTOR_SIZE             512
 #define MAX_PATH_SIZE           256
@@ -90,7 +90,7 @@ bool FAT_Initialize(uint16_t disk)
     // read boot sector
     if (!FAT_ReadBootSector(disk))
     {
-        printf("FAT: read boot sector failed\r\n");
+        printk("FAT: read boot sector failed\r\n");
         return false;
     }
 
@@ -99,13 +99,13 @@ bool FAT_Initialize(uint16_t disk)
     uint32_t fatSize = g_Data->BS.BootSector.BytesPerSector * g_Data->BS.BootSector.SectorsPerFat;
     if (sizeof(FAT_Data) + fatSize >= MEMORY_FAT_SIZE)
     {
-        printf("FAT: not enough memory to read FAT! Required %lu, only have %u\r\n", sizeof(FAT_Data) + fatSize, MEMORY_FAT_SIZE);
+        printk("FAT: not enough memory to read FAT! Required %lu, only have %u\r\n", sizeof(FAT_Data) + fatSize, MEMORY_FAT_SIZE);
         return false;
     }
 
     if (!FAT_ReadFat(disk))
     {
-        printf("FAT: read FAT failed\r\n");
+        printk("FAT: read FAT failed\r\n");
         return false;
     }
 
@@ -124,7 +124,7 @@ bool FAT_Initialize(uint16_t disk)
 
     if (ATA_read28(disk, rootDirLba, 1, g_Data->RootDirectory.Buffer))
     {
-        printf("FAT: read root directory failed\r\n");
+        printk("FAT: read root directory failed\r\n");
         return false;
     }
 
@@ -157,7 +157,7 @@ FAT_File* FAT_OpenEntry(uint16_t disk, FAT_DirectoryEntry* entry)
     // out of handles
     if (handle < 0)
     {
-        printf("FAT: out of file handles\r\n");
+        printk("FAT: out of file handles\r\n");
         return false;
     }
 
@@ -173,10 +173,10 @@ FAT_File* FAT_OpenEntry(uint16_t disk, FAT_DirectoryEntry* entry)
 
     if (ATA_read28(disk, FAT_ClusterToLba(fd->CurrentCluster), 1, fd->Buffer))
     {
-        printf("FAT: open entry failed - read error cluster=%u lba=%u\n", fd->CurrentCluster, FAT_ClusterToLba(fd->CurrentCluster));
+        printk("FAT: open entry failed - read error cluster=%u lba=%u\n", fd->CurrentCluster, FAT_ClusterToLba(fd->CurrentCluster));
         for (int i = 0; i < 11; i++)
-            printf("%c", entry->Name[i]);
-        printf("\n");
+            printk("%c", entry->Name[i]);
+        printk("\n");
         return false;
     }
 
@@ -197,7 +197,7 @@ uint32_t FAT_NextCluster(uint32_t currentCluster) {
         uint32_t fatIndex = currentCluster * 2;
         return (*(uint16_t*)(g_Fat + fatIndex));
     }
-    printf("FAT: unknown file system!\r\n");
+    printk("FAT: unknown file system!\r\n");
 }
 
 uint32_t FAT_Read(uint16_t disk, FAT_File* file, uint32_t byteCount, void* dataOut)
@@ -223,7 +223,7 @@ uint32_t FAT_Read(uint16_t disk, FAT_File* file, uint32_t byteCount, void* dataO
         fd->Public.Position += take;
         byteCount -= take;
 
-        // printf("leftInBuffer=%lu take=%lu\r\n", leftInBuffer, take);
+        // printk("leftInBuffer=%lu take=%lu\r\n", leftInBuffer, take);
         // See if we need to read more data
         if (leftInBuffer == take)
         {
@@ -235,7 +235,7 @@ uint32_t FAT_Read(uint16_t disk, FAT_File* file, uint32_t byteCount, void* dataO
                 // read next sector
                 if (ATA_read28(disk, fd->CurrentCluster, 1, fd->Buffer))
                 {
-                    printf("FAT: read error!\r\n");
+                    printk("FAT: read error!\r\n");
                     break;
                 }
             }
@@ -259,7 +259,7 @@ uint32_t FAT_Read(uint16_t disk, FAT_File* file, uint32_t byteCount, void* dataO
                 // read next sector
                 if (ATA_read28(disk, FAT_ClusterToLba(fd->CurrentCluster) + fd->CurrentSectorInCluster, 1, fd->Buffer))
                 {
-                    printf("FAT: read error!\r\n");
+                    printk("FAT: read error!\r\n");
                     break;
                 }
             }
@@ -359,7 +359,7 @@ FAT_File* FAT_Open(uint16_t disk, const char* path)
             // check if directory
             if (!isLast && entry.Attributes & FAT_ATTRIBUTE_DIRECTORY == 0)
             {
-                printf("FAT: %s not a directory\r\n", name);
+                printk("FAT: %s not a directory\r\n", name);
                 return NULL;
             }
 
@@ -370,7 +370,7 @@ FAT_File* FAT_Open(uint16_t disk, const char* path)
         {
             FAT_Close(current);
 
-            printf("FAT: %s not found\r\n", name);
+            printk("FAT: %s not found\r\n", name);
             return NULL;
         }
     }

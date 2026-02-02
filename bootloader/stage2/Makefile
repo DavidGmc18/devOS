@@ -1,6 +1,4 @@
-TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I$(SOURCE_DIR)/src/bootloader
-TARGET_LIBS += -lgcc
+TARGET_CFLAGS += -I$(SOURCE_DIR)/bootloader
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
 
 HEADERS_C = 	$(shell find . -type f -name "*.h") ../BPB.h

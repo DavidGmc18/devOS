@@ -1,6 +1,3 @@
-TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I$(SOURCE_DIR)/src -I$(SOURCE_DIR)/include/std
-TARGET_LIBS += -lgcc $(ARCH_i686_LIB) $(HAL_LIB) $(STD_LIB)
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
 
 HEADERS_C = 	$(shell find . -type f -name "*.h")
@@ -18,8 +15,8 @@ all: kernel
 
 kernel: libs $(BUILD_DIR)/kernel.bin
 
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(STD_LIB) $(HAL_LIB) $(ARCH_i686_LIB)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
+$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(LIBC) $(HAL_LIB) $(ARCH_i686_LIB)
+	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
 	@echo "--> Created:  kernel.bin"
 
 $(BUILD_DIR)/kernel/c/%.o: %.c $(HEADERS_C)
@@ -33,9 +30,9 @@ $(BUILD_DIR)/kernel/asm/%.o: %.asm $(HEADERS_ASM)
 	@echo "--> Compiled: " $<
 
 libs:
-	@$(MAKE) -C $(SOURCE_DIR)/src/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/src/hal BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/src/std BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C $(SOURCE_DIR)/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C $(SOURCE_DIR)/hal BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C $(SOURCE_DIR)/lib BUILD_DIR=$(abspath $(BUILD_DIR))
 
 clean:
 	@rm -f $(BUILD_DIR)/kernel.bin

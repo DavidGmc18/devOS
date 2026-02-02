@@ -1,6 +1,3 @@
-TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I$(SOURCE_DIR)/src
-
 HEADERS_C = 	$(shell find . -type f -name "*.h")
 SOURCES_C = 	$(shell find . -type f -name "*.c")
 

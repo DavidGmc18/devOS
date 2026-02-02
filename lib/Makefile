@@ -1,35 +1,32 @@
-TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I$(SOURCE_DIR)/src -I$(SOURCE_DIR)/include/std
-
 HEADERS_C = 	$(shell find . -type f -name "*.h")
 SOURCES_C = 	$(shell find . -type f -name "*.c")
 
 HEADERS_ASM = 	$(shell find . -type f -name "*.inc")
 SOURCES_ASM = 	$(shell find . -type f -name "*.asm")
 
-OBJECTS_C = 	$(patsubst %.c, $(BUILD_DIR)/std/c/%.o, $(SOURCES_C))
-OBJECTS_ASM = 	$(patsubst %.asm, $(BUILD_DIR)/std/asm/%.o, $(SOURCES_ASM))
+OBJECTS_C = 	$(patsubst %.c, $(BUILD_DIR)/lib/c/%.o, $(SOURCES_C))
+OBJECTS_ASM = 	$(patsubst %.asm, $(BUILD_DIR)/lib/asm/%.o, $(SOURCES_ASM))
 
-.PHONY: all std clean always
+.PHONY: all lib clean always
 
-all: std
+all: lib
 
-std: $(STD_LIB)
+lib: $(LIBC)
 
-$(STD_LIB): $(OBJECTS_ASM) $(OBJECTS_C)
+$(LIBC): $(OBJECTS_ASM) $(OBJECTS_C)
 	@mkdir -p $(@D)
 	@$(TARGET_AR) rcs $@ $^
 	@echo "--> Created:  libc.a"
 
-$(BUILD_DIR)/std/c/%.o: %.c $(HEADERS_C)
+$(BUILD_DIR)/lib/c/%.o: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
 	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
-$(BUILD_DIR)/std/asm/%.o: %.asm $(HEADERS_ASM)
+$(BUILD_DIR)/lib/asm/%.o: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
 
 clean:
-	rm -f $(STD_LIB)
+	rm -f $(LIBC)

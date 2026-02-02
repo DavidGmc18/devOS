@@ -33,17 +33,17 @@ bootloader: stage0 stage1 stage2
 stage0: $(BUILD_DIR)/bootloader/stage0.bin
 
 $(BUILD_DIR)/bootloader/stage0.bin: always
-	@$(MAKE) -C src/bootloader/stage0 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C bootloader/stage0 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 stage1: $(BUILD_DIR)/bootloader/stage1.bin
 
 $(BUILD_DIR)/bootloader/stage1.bin: always
-	@$(MAKE) -C src/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 stage2: $(BUILD_DIR)/bootloader/stage2.bin
 
 $(BUILD_DIR)/bootloader/stage2.bin: always
-	@$(MAKE) -C src/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Kernel
@@ -51,7 +51,7 @@ $(BUILD_DIR)/bootloader/stage2.bin: always
 kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: always
-	@$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C kernel BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Always
@@ -63,7 +63,7 @@ always:
 # Clean
 #
 clean:
-	@$(MAKE) -C src/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	@$(MAKE) -C src/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	@$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	@$(MAKE) -C bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	@$(MAKE) -C bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	@$(MAKE) -C kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	@rm -rf $(BUILD_DIR)/*

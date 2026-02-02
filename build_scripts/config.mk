@@ -13,18 +13,18 @@ export LIBS =
 
 export TARGET = i686-elf
 export TARGET_ASM = nasm
-export TARGET_ASMFLAGS =
-export TARGET_CFLAGS = -std=c99 -g -O2 -I$(SOURCE_DIR)/src/libs -DDEBUG
+export TARGET_ASMFLAGS = -f elf
+export TARGET_CFLAGS = -std=c99 -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(SOURCE_DIR) -I$(SOURCE_DIR)/include -I$(SOURCE_DIR)/src/libs
 export TARGET_CC = $(TARGET)-gcc
 export TARGET_CXX = $(TARGET)-g++
 export TARGET_LD = $(TARGET)-gcc
 export TARGET_AR = $(TARGET)-ar
 export TARGET_LINKFLAGS =
-export TARGET_LIBS =
+export TARGET_LIBS = -lgcc
 
 export ARCH_i686_LIB = $(BUILD_DIR)/arch/i686.a
 export HAL_LIB = $(BUILD_DIR)/hal.a
-export STD_LIB = $(BUILD_DIR)/libc.a
+export LIBC = $(BUILD_DIR)/libc.a
 
 BINUTILS_VERSION = 2.45.1
 BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar.xz

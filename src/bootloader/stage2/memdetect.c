@@ -1,5 +1,5 @@
 #include "memdetect.h"
-#include "x86.h"
+#include "e820.h"
 #include "stdio.h"
 
 #define MAX_REGIONS 256
@@ -14,7 +14,7 @@ void Memory_Detect(MemoryInfo* memoryInfo) {
     int ret;
 
     g_MemRegionCount = 0;
-    ret = x86_E820GetNextBlock(&block, &continuation);
+    ret = i686_E820GetNextBlock(&block, &continuation);
 
     while (ret > 0 && continuation != 0) {
         g_MemRegions[g_MemRegionCount].Begin = block.Base;
@@ -25,7 +25,7 @@ void Memory_Detect(MemoryInfo* memoryInfo) {
 
         printf("E820: base=0x%llx length=0x%llx type=0x%x\n", block.Base, block.Length, block.Type);
 
-        ret = x86_E820GetNextBlock(&block, &continuation);
+        ret = i686_E820GetNextBlock(&block, &continuation);
     }
 
     memoryInfo->RegionCount = g_MemRegionCount;

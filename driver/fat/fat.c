@@ -1,17 +1,29 @@
 #include "fat.h"
-#include "memdefs.h"
 #include <string.h>
 #include <memory.h>
-#include "ctype.h"
 #include <stddef.h>
-#include "minmax.h"
-#include <BPB.h>
+#include <bootloader/BPB.h>
 #include <arch/i686/printk.h>
+#include <driver/ata/ata.h>
 
 #define SECTOR_SIZE             512
 #define MAX_PATH_SIZE           256
 #define MAX_FILE_HANDLES        10
 #define ROOT_DIRECTORY_HANDLE   -1
+
+#define MEMORY_FAT_ADDR     ((void*)0x20000)
+#define MEMORY_FAT_SIZE     0x00010000
+
+// TODO move this somewhere
+////////////////////////////////////////////////////////////////
+bool islower(char chr) {
+    return chr >= 'a' && chr <= 'z';
+}
+char toupper(char chr) {
+    return islower(chr) ? (chr - 'a' + 'A') : chr;
+}
+#define min(a,b)    ((a) < (b) ? (a) : (b))
+////////////////////////////////////////////////////////////////
 
 typedef struct 
 {

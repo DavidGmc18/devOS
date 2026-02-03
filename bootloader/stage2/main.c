@@ -1,12 +1,14 @@
 #include <stdint.h>
-#include "fat.h"
-#include "memdefs.h"
+#include <driver/fat/fat.h>
 #include <memory.h>
-#include <boot/bootparams.h>
-#include "memdetect.h"
-#include "ata.h"
-#include <arch/i686/vga_text.h>
+#include <driver/vga/vga_text.h>
 #include <arch/i686/printk.h>
+#include <src/libs/boot/bootparams.h>
+#include "memdetect.h"
+
+#define MEMORY_KERNEL_ADDR  ((void*)0x100000)
+#define MEMORY_LOAD_KERNEL  ((void*)0x30000)
+#define MEMORY_LOAD_SIZE    0x00010000 // TODO what is this supposed to do?
 
 uint8_t* KernelLoadBuffer = (uint8_t*)MEMORY_LOAD_KERNEL;
 uint8_t* Kernel = (uint8_t*)MEMORY_KERNEL_ADDR;

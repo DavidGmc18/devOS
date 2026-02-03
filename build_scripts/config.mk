@@ -31,3 +31,10 @@ BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar
 
 GCC_VERSION = 15.2.0
 GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-$(GCC_VERSION)/gcc-$(GCC_VERSION).tar.xz
+
+# TODO make drivers portable
+# TODO rename VGA?
+# TODO make e9 driver?
+export ATA_DRIVER = $(BUILD_DIR)/driver/ata.a
+export FAT_DRIVER = $(BUILD_DIR)/driver/fat.a
+export VGA_DRIVER = $(BUILD_DIR)/driver/vga.a

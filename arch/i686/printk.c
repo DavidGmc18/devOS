@@ -1,6 +1,6 @@
 #include "printk.h"
 #include <stdbool.h>
-#include "vga_text.h"
+#include <driver/vga/vga_text.h> // TODO arch should not include driver
 #include "e9.h"
 
 static void putc(char c) {

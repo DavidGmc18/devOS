@@ -18,7 +18,7 @@ stage2: $(BUILD_DIR)/bootloader/stage2.bin
 
 $(BUILD_DIR)/bootloader/stage2.bin: $(OBJECTS_ASM) $(OBJECTS_C)
 	@mkdir -p $(@D)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/stage2.map -o $@ $^ $(TARGET_LIBS) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
+	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/stage2.map -o $@ $^ $(TARGET_LIBS) $(FAT_DRIVER) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
 	@echo "--> Created  stage2.bin"
 
 $(BUILD_DIR)/bootloader/stage2/c/%.o: %.c $(HEADERS_C)

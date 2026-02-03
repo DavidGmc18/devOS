@@ -1,6 +1,5 @@
 #pragma once
-#include "stdint.h"
-#include "ata.h"
+#include <stdint.h>
 #include <stdbool.h>
 
 typedef struct 

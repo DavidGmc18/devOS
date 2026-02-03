@@ -5,3 +5,4 @@
 - use of printk in bootloader and low-level stuff instead of stdio.c-printf
 - rename DAP capability to Extended...... or check as well for EDD (Enhanced Disk Drive Specification) support
 - rename MDB to Boot info
+- Fix IntelliSense or use clangd

@@ -64,7 +64,7 @@ void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs) {
                regs->esp, regs->ebp, regs->eip, regs->eflags, regs->cs, regs->ds, regs->ss);
         printk("  interrupt=%x  errorcode=%x\n", regs->interrupt, regs->error);
         printk("KERNEL PANIC!\n");
-        i686_Panic();
+        i686_panic();
     }
 }
 

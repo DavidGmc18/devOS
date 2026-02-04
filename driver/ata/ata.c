@@ -118,7 +118,7 @@ int ATA_identify(uint16_t disk, void* buffer) {
     uint8_t status = i686_inb(base + ATA_REG_STATUS);
 
     if (status == 0 || status == 0xFF) {
-        printk("ATA: Floating bus 0x%x\n", bus);
+        printk("ATA: Floating bus 0x%x, disk=0x%x\n", bus, disk);
         return ATA_ERRC_FLOATING_BUS;
     }
 
@@ -187,7 +187,7 @@ int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
 
     uint8_t status = i686_inb(base + ATA_REG_STATUS);
     if (status == 0xFF || status == 0) {
-        printk("ATA: Floating bus 0x%x\n", bus);
+        printk("ATA: Floating bus 0x%x, disk=0x%x\n", bus, disk);
         return ATA_ERRC_FLOATING_BUS;
     }
 

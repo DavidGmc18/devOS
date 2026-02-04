@@ -30,9 +30,24 @@ uint32_t i686_inl(port_t port) {
     return ret;
 }
 
-// TODO can we use NULL_PORT?
-#define UNUSED_PORT     0x80
+void i686_sti() {
+    __asm__ volatile ("sti" ::: "memory");
+}
+
+void i686_cli() {
+    __asm__ volatile ("cli" ::: "memory");
+}
 
 void i686_iowait() {
-    i686_outb(UNUSED_PORT, 0);
+    i686_outb(0x80, 0);
+}
+
+__attribute__((naked, noreturn))
+void i686_panic(void) {
+    __asm__ volatile (
+        "cli\n"
+        "1:\n"
+        "hlt\n"
+        "jmp 1b\n"
+    );
 }

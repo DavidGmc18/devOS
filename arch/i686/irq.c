@@ -34,7 +34,7 @@ void i686_IRQ_Initialize() {
     }
 
     // enable interrupts
-    i686_EnableInterrupts();
+    i686_sti();
 }
 
 void i686_IRQ_RegisterHandler(int irq, IRQ_Handler handler) {

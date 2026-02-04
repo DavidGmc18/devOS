@@ -214,7 +214,7 @@ int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
 
         if (timeout <= 0) {
             printk("ATA: Timedout!\n");
-            // TODO should we soft reset?
+            ATA_soft_reset(bus);
             return ATA_ERRC_TIMED_OUT; 
         }
 

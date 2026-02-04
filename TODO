@@ -1,8 +1,6 @@
-- fix CHS order in functions
-- TODO test printk
-- reuse fisrt data sector calculation from stage1
-- use IO.h and IO.c like in stage2 (in whole stgae2 and move to arch/i686 so everything uses it)
-- use of printk in bootloader and low-level stuff instead of stdio.c-printf
+- drop floppy support
+- reuse first data sector calculation from stage1
 - rename DAP capability to Extended...... or check as well for EDD (Enhanced Disk Drive Specification) support
 - rename MDB to Boot info
 - Fix IntelliSense or use clangd
+- resolve printk vs printf situation

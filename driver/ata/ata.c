@@ -1,6 +1,7 @@
 #include "ata.h"
 #include <arch/i686/io.h>
 #include <arch/i686/printk.h>
+#include <memory.h>
 
 // ATA I/O port offsets
 #define ATA_REG_DATA        0x0   // Data Register (16-bit)
@@ -46,7 +47,7 @@ uint16_t ATA_BUSES[ATA_BUSES_LEN] = {
 uint16_t get_base(uint16_t bus) {
     if (bus >= ATA_BUSES_LEN) {
         printk("ATA: Invalid bus 0x%x\n", bus);
-        return 0; // TODO define NULL
+        return NULL;
     }
 
     return ATA_BUSES[bus];

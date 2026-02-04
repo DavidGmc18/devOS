@@ -5,6 +5,8 @@
 #include <bootloader/BPB.h>
 #include <arch/i686/printk.h>
 #include <driver/ata/ata.h>
+#include <string.h>
+#include <math.h>
 
 #define SECTOR_SIZE             512
 #define MAX_PATH_SIZE           256
@@ -13,17 +15,6 @@
 
 #define MEMORY_FAT_ADDR     ((void*)0x20000)
 #define MEMORY_FAT_SIZE     0x00010000
-
-// TODO move this somewhere
-////////////////////////////////////////////////////////////////
-bool islower(char chr) {
-    return chr >= 'a' && chr <= 'z';
-}
-char toupper(char chr) {
-    return islower(chr) ? (chr - 'a' + 'A') : chr;
-}
-#define min(a,b)    ((a) < (b) ? (a) : (b))
-////////////////////////////////////////////////////////////////
 
 typedef struct 
 {
@@ -223,12 +214,12 @@ uint32_t FAT_Read(uint16_t disk, FAT_File* file, uint32_t byteCount, void* dataO
 
     // don't read past the end of the file
     if (!fd->Public.IsDirectory || (fd->Public.IsDirectory && fd->Public.Size != 0))
-        byteCount = min(byteCount, fd->Public.Size - fd->Public.Position);
+        byteCount = MIN(byteCount, fd->Public.Size - fd->Public.Position);
 
     while (byteCount > 0)
     {
         uint32_t leftInBuffer = SECTOR_SIZE - (fd->Public.Position % SECTOR_SIZE);
-        uint32_t take = min(byteCount, leftInBuffer);
+        uint32_t take = MIN(byteCount, leftInBuffer);
 
         memcpy(u8DataOut, fd->Buffer + fd->Public.Position % SECTOR_SIZE, take);
         u8DataOut += take;

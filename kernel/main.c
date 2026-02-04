@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "stdio.h"
+#include <stdio.h>
 #include "memory.h"
 #include <hal/hal.h>
 #include <boot/bootparams.h>
@@ -52,7 +52,7 @@ void __attribute__((section(".entry"))) start(BootParams* bootParams) {
     }
 
     printf("%s", asc);
-    strftime(strf2, 26, "%x", &time);
+    strftime(strf2, 26, "%x\n", &time);
     printf("%s", strf2);
 
 end:

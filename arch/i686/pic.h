@@ -1,7 +1,5 @@
 #pragma once
 
-// TODO APIC
-
 #include <stdint.h>
 
 void i686_PIC_Configure(uint8_t offsetPic1, uint8_t offsetPic2);

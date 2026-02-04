@@ -2,6 +2,7 @@
 #include <arch/i686/io.h>
 #include <arch/i686/printk.h>
 #include <memory.h>
+#include <stddef.h>
 
 // ATA I/O port offsets
 #define ATA_REG_DATA        0x0   // Data Register (16-bit)
@@ -44,18 +45,18 @@ uint16_t ATA_BUSES[ATA_BUSES_LEN] = {
 
 #define ATA_TIMEOUT 1000000
 
-uint16_t get_base(uint16_t bus) {
+port_t get_base(uint16_t bus) {
     if (bus >= ATA_BUSES_LEN) {
         printk("ATA: Invalid bus 0x%x\n", bus);
-        return NULL;
+        return NULL_PORT;
     }
 
     return ATA_BUSES[bus];
 }
 
 int ATA_io_delay(uint16_t bus) {
-    uint16_t base = get_base(bus);
-    if (!base) return ATA_ERRC_INVALID_BASE;
+    port_t base = get_base(bus);
+    if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;
 
     i686_inb(base + ATA_CTRL_OFFSET);
     i686_inb(base + ATA_CTRL_OFFSET);
@@ -66,8 +67,8 @@ int ATA_io_delay(uint16_t bus) {
 }
 
 int ATA_soft_reset(uint16_t bus) {
-    uint16_t base = get_base(bus);
-    if (!base) return ATA_ERRC_INVALID_BASE;
+    port_t base = get_base(bus);
+    if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;
 
     i686_outb(base + ATA_CTRL_OFFSET, ATA_CMD_SRST);
     ATA_io_delay(bus);
@@ -98,8 +99,8 @@ int ATA_soft_reset(uint16_t bus) {
 int ATA_identify(uint16_t disk, void* buffer) {
     uint16_t bus = disk >> 1;
     uint8_t slave_bit = (disk & 1) << 4;
-    uint16_t base = get_base(bus);
-    if (!base) return ATA_ERRC_INVALID_BASE;
+    port_t base = get_base(bus);
+    if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;
 
     int error = ATA_soft_reset(bus);
     if (error) return error;
@@ -173,8 +174,8 @@ int ATA_identify(uint16_t disk, void* buffer) {
 int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
     uint16_t bus = disk >> 1;
     uint8_t slave_bit = (disk & 1) << 4;
-    uint16_t base = get_base(bus);
-    if (!base) return ATA_ERRC_INVALID_BASE;
+    port_t base = get_base(bus);
+    if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;
 
     i686_outb(base + ATA_REG_DRIVE, ATA_CMD_LBA | slave_bit | ((LBA >> 24) & 0x0F));
     i686_outb(base + ATA_REG_SECCOUNT, sectors);

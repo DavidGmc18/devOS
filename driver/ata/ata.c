@@ -45,7 +45,7 @@ uint16_t ATA_BUSES[ATA_BUSES_LEN] = {
 
 #define ATA_TIMEOUT 1000000
 
-port_t get_base(uint16_t bus) {
+port_t get_base(ATA_bus_t bus) {
     if (bus >= ATA_BUSES_LEN) {
         printk("ATA: Invalid bus 0x%x\n", bus);
         return NULL_PORT;
@@ -54,7 +54,7 @@ port_t get_base(uint16_t bus) {
     return ATA_BUSES[bus];
 }
 
-int ATA_io_delay(uint16_t bus) {
+int ATA_io_delay(ATA_bus_t bus) {
     port_t base = get_base(bus);
     if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;
 
@@ -66,7 +66,7 @@ int ATA_io_delay(uint16_t bus) {
     return ATA_ERRC_SUCCESS;
 }
 
-int ATA_soft_reset(uint16_t bus) {
+int ATA_soft_reset(ATA_bus_t bus) {
     port_t base = get_base(bus);
     if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;
 
@@ -77,9 +77,8 @@ int ATA_soft_reset(uint16_t bus) {
     uint32_t timeout = ATA_TIMEOUT;
     uint8_t status;
     while (timeout--) {
-        status = i686_inb(base + ATA_CTRL_OFFSET);
+        status = i686_inb(base + ATA_REG_STATUS);
         if (!(status & ATA_SR_BSY)) break;
-        if (status & ATA_SR_ERR) break;
     }
 
     if (status & ATA_SR_ERR) {
@@ -96,8 +95,9 @@ int ATA_soft_reset(uint16_t bus) {
     return ATA_ERRC_SUCCESS;
 }
 
-int ATA_identify(uint16_t disk, void* buffer) {
-    uint16_t bus = disk >> 1;
+// TODO this behaves very weirdly with drive 2 (aka. hdc)
+int ATA_identify(ATA_disk_t disk, void* buffer) {
+    ATA_bus_t bus = disk >> 1;
     uint8_t slave_bit = (disk & 1) << 4;
     port_t base = get_base(bus);
     if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;
@@ -117,7 +117,8 @@ int ATA_identify(uint16_t disk, void* buffer) {
     i686_outb(base + ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
     uint8_t status = i686_inb(base + ATA_REG_STATUS);
 
-    if (status == 0 || status == 0xFF) {
+    // TODO removed "status == 0" case, so it works with drive 2 (hdc), but its slower
+    if (status == 0xFF) {
         printk("ATA: Floating bus 0x%x, disk=0x%x\n", bus, disk);
         return ATA_ERRC_FLOATING_BUS;
     }
@@ -171,8 +172,8 @@ int ATA_identify(uint16_t disk, void* buffer) {
     return ATA_ERRC_SUCCESS;
 }
 
-int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
-    uint16_t bus = disk >> 1;
+int ATA_read28(ATA_disk_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
+    ATA_bus_t bus = disk >> 1;
     uint8_t slave_bit = (disk & 1) << 4;
     port_t base = get_base(bus);
     if (base == NULL_PORT) return ATA_ERRC_INVALID_BASE;

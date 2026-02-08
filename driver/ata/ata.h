@@ -9,10 +9,14 @@
 #define ATA_ERRC_FLOATING_BUS   4 // no disk present
 #define ATA_ERRC_NOT_ATA_DISK   5
 
-int ATA_io_delay(uint16_t bus);
+// TODO rename disk to drive
+typedef uint16_t ATA_bus_t;
+typedef uint16_t ATA_disk_t;
 
-int ATA_soft_reset(uint16_t bus);
+int ATA_io_delay(ATA_bus_t bus);
 
-int ATA_identify(uint16_t disk, void* buffer);
+int ATA_soft_reset(ATA_bus_t bus);
 
-int ATA_read28(uint16_t disk, uint32_t LBA, uint8_t sectors, void* buffer);
+int ATA_identify(ATA_disk_t disk, void* buffer);
+
+int ATA_read28(ATA_disk_t disk, uint32_t LBA, uint8_t sectors, void* buffer);

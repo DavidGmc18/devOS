@@ -7,8 +7,8 @@ uint16_t ScreenHeight;
 
 uint8_t* ScreenBuffer;
 
-uint16_t ScreenX = 0;
-uint16_t ScreenY = 0;
+uint16_t CursorX = 0;
+uint16_t CursorY = 0;
 
 const uint8_t DEFAULT_COLOR = 0x07;
 
@@ -27,6 +27,9 @@ void VGA_setcursor(int x, int y) {
     i686_outb(0x3D5, (uint8_t)(pos & 0xFF));
     i686_outb(0x3D4, 0x0E);
     i686_outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+
+    CursorX = x;
+    CursorY = y;
 }
 
 void VGA_clrscr() {
@@ -37,9 +40,9 @@ void VGA_clrscr() {
         }
     }
 
-    ScreenX = 0;
-    ScreenY = 0;
-    VGA_setcursor(ScreenX, ScreenY);
+    CursorX = 0;
+    CursorY = 0;
+    VGA_setcursor(CursorX, CursorY);
 }
 
 void VGA_scrollback(int lines) {
@@ -57,7 +60,7 @@ void VGA_scrollback(int lines) {
         }
     }
 
-    ScreenY -= lines;
+    CursorY -= lines;
 }
 
 void VGA_putchr(uint16_t x, uint16_t y, char ch) {
@@ -79,41 +82,41 @@ uint8_t VGA_getcolor(uint16_t x, uint16_t y) {
 void VGA_putc(char ch) {
     switch (ch) {
         case '\n':
-            ScreenX = 0;
-            ScreenY++;
+            CursorX = 0;
+            CursorY++;
             break;
     
         case '\t':
-            for (int i = 0; i < 4 - (ScreenX % 4); i++) {
+            for (int i = 0; i < 4 - (CursorX % 4); i++) {
                 VGA_putc(' ');
             }
             break;
 
         case '\r':
-            ScreenX = 0;
+            CursorX = 0;
             break;
 
         default:
-            VGA_putchr(ScreenX, ScreenY, ch);
-            VGA_putcolor(ScreenX, ScreenY, CursorColor);
-            ScreenX++;
+            VGA_putchr(CursorX, CursorY, ch);
+            VGA_putcolor(CursorX, CursorY, CursorColor);
+            CursorX++;
             break;
     }
 
-    if (ScreenX >= ScreenWidth){
-        ScreenY++;
-        ScreenX = 0;
+    if (CursorX >= ScreenWidth){
+        CursorY++;
+        CursorX = 0;
     }
 
-    if (ScreenY >= ScreenHeight) {
+    if (CursorY >= ScreenHeight) {
         VGA_scrollback(1);
     }
 
-    VGA_setcursor(ScreenX, ScreenY);
+    VGA_setcursor(CursorX, CursorY);
 }
 
 const uint8_t ansi_to_vga[] = {
-    [0] =   0x0,  // Black
+    [0] =   0x0,   // Black
     [1] =   0x4,   // Red
     [2] =   0x2,   // Green
     [3] =   0x6,   // Yellow / Brown
@@ -229,4 +232,13 @@ void VGA_puts(const char* str) {
 
         VGA_putc(str[i]);
     }
+}
+
+void VGA_set_color(uint8_t color) {
+    CursorColor = color;
+}
+
+void VGA_get_cursor(uint8_t* x, uint8_t* y) {
+    *x = CursorX;
+    *y = CursorY;
 }

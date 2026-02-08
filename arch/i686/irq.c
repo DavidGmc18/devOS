@@ -1,6 +1,6 @@
 #include "irq.h"
 #include "pic.h"
-#include "io.h"
+#include "i686.h"
 #include <stddef.h>
 #include "printk.h"
 

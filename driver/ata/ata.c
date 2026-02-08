@@ -1,5 +1,5 @@
 #include "ata.h"
-#include <arch/i686/io.h>
+#include <arch/i686/i686.h>
 #include <arch/i686/printk.h>
 #include <memory.h>
 #include <stddef.h>
@@ -96,7 +96,7 @@ int ATA_soft_reset(ATA_bus_t bus) {
 }
 
 // TODO this behaves very weirdly with drive 2 (aka. hdc)
-int ATA_identify(ATA_disk_t disk, void* buffer) {
+int ATA_identify(ATA_drive_t disk, void* buffer) {
     ATA_bus_t bus = disk >> 1;
     uint8_t slave_bit = (disk & 1) << 4;
     port_t base = get_base(bus);
@@ -172,7 +172,7 @@ int ATA_identify(ATA_disk_t disk, void* buffer) {
     return ATA_ERRC_SUCCESS;
 }
 
-int ATA_read28(ATA_disk_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
+int ATA_read28(ATA_drive_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
     ATA_bus_t bus = disk >> 1;
     uint8_t slave_bit = (disk & 1) << 4;
     port_t base = get_base(bus);

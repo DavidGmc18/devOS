@@ -1,5 +1,5 @@
 #include "e9.h"
-#include "io.h"
+#include "i686.h"
 
 void e9_putc(char ch) {
     i686_outb(0xE9, ch);

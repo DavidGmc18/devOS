@@ -1,5 +1,5 @@
 #include "rtc.h"
-#include "io.h"
+#include "i686.h"
 
 #define RTC_COMMAND_PORT    0x70
 #define RTC_DATA_PORT       0x71

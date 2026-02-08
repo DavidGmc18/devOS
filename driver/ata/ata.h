@@ -11,12 +11,12 @@
 
 // TODO rename disk to drive
 typedef uint16_t ATA_bus_t;
-typedef uint16_t ATA_disk_t;
+typedef uint16_t ATA_drive_t;
 
 int ATA_io_delay(ATA_bus_t bus);
 
 int ATA_soft_reset(ATA_bus_t bus);
 
-int ATA_identify(ATA_disk_t disk, void* buffer);
+int ATA_identify(ATA_drive_t disk, void* buffer);
 
-int ATA_read28(ATA_disk_t disk, uint32_t LBA, uint8_t sectors, void* buffer);
+int ATA_read28(ATA_drive_t disk, uint32_t LBA, uint8_t sectors, void* buffer);

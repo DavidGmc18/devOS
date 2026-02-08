@@ -41,8 +41,8 @@ void __attribute__((section(".entry"))) start(BootParams* bootParams) {
     asctime(asc, 26, &time);
     printf("%s", asc);
 
-    char strf[64];
-    strftime(strf, 64, "%Y:%y:%b%h%m:%j:%d:%a:%w:%Hh:%Ih:%Mm:%Ss--%x", &time);
+    char strf[96];
+    strftime(strf, 96, "%Y:%y:%b%h%m:%j:%d:%a:%w:%Hh:%Ih:%Mm:%Ss--%x", &time);
     printf("%s\n\n\n\n", strf);
 
     char strf2[32];

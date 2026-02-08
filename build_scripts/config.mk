@@ -34,7 +34,7 @@ GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-$(GCC_VERSION)/gcc-$(GCC_VERSION).tar.
 
 # TODO make drivers portable
 # TODO rename VGA?
-# TODO make e9 driver? RTC?
+# TODO make e9 driver? RTC? PIC?
 export ATA_DRIVER = $(BUILD_DIR)/driver/ata.a
 export FAT_DRIVER = $(BUILD_DIR)/driver/fat.a
 export VGA_DRIVER = $(BUILD_DIR)/driver/vga.a

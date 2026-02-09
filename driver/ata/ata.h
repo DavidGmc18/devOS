@@ -9,7 +9,6 @@
 #define ATA_ERRC_FLOATING_BUS   4 // no disk present
 #define ATA_ERRC_NOT_ATA_DISK   5
 
-// TODO rename disk to drive
 typedef uint16_t ATA_bus_t;
 typedef uint16_t ATA_drive_t;
 

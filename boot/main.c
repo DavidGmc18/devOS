@@ -2,6 +2,7 @@
 #include <memory.h>
 #include <driver/vga/vga_text.h>
 #include <arch/i686/printk.h>
+#include <system/storage/partition/mbr.h>
 
 extern uint8_t __bss_start;
 extern uint8_t __end;
@@ -17,6 +18,11 @@ void __attribute__((cdecl)) main(uint16_t drive, uint8_t partition) {
 
     VGA_set_color(0x07);
     printk("Boot params -> drive=%d partition=%d\n", drive, partition);
+
+    MBR_Table mbr_table;
+    MBR_get_table(drive, &mbr_table);
+
+    printk("LBA=%d sectors=%d\n", mbr_table.partitions[partition].lba, mbr_table.partitions[partition].sectors);
 
     for (;;) ;
 }

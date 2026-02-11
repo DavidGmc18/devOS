@@ -15,9 +15,9 @@ all: boot
 
 boot: $(BUILD_DIR)/boot.bin
 
-$(BUILD_DIR)/boot.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(FAT_DRIVER) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
+$(BUILD_DIR)/boot.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(SYSTEM) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
 	@mkdir -p $(@D)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/boot.map -o $@ $^ $(TARGET_LIBS) $(FAT_DRIVER) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
+	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/boot.map -o $@ $^ $(TARGET_LIBS) $(SYSTEM) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
 	@echo "--> Created  boot.bin"
 
 $(BUILD_DIR)/boot/c/%.o: %.c $(HEADERS_C)

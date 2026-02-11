@@ -40,6 +40,7 @@ $(BUILD_DIR)/diskimage.dd: deps boot kernel
 deps: $(BUILD_DIR)/deps/BootLoader-MBR-i686.bin
 	@$(MAKE) -C $(SOURCE_DIR)/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
 	@$(MAKE) -C $(SOURCE_DIR)/hal BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C $(SOURCE_DIR)/system BUILD_DIR=$(abspath $(BUILD_DIR))
 	@$(MAKE) -C $(SOURCE_DIR)/lib BUILD_DIR=$(abspath $(BUILD_DIR))
 	@$(MAKE) -C $(SOURCE_DIR)/driver BUILD_DIR=$(abspath $(BUILD_DIR))
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -21,3 +25,7 @@ void VGA_puts(const char* str);
 void VGA_set_color(uint8_t color);
 
 void VGA_get_cursor(uint8_t* x, uint8_t* y);
+
+#ifdef __cplusplus
+}
+#endif

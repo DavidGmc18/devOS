@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <driver/ata/ata.h>
 
@@ -19,3 +23,7 @@ typedef struct {
 } __attribute__((packed)) MBR_Table;
 
 int MBR_get_table(ATA_drive_t drive, MBR_Table* table);
+
+#ifdef __cplusplus
+}
+#endif

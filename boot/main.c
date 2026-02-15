@@ -9,11 +9,11 @@
 extern uint8_t __bss_start;
 extern uint8_t __end;
 
-uint8_t* kernel = (uint8_t*)0x104000;
+uint8_t* kernel = (uint8_t*)0x110000;
 
 typedef void (*KernelStart)(BootParams*);
 
-void __attribute__((cdecl)) main(uint16_t boot_drive, uint8_t boot_partition, MemoryInfo* mem_info) {
+void __attribute__((cdecl)) main(ATA_drive_t boot_drive, uint8_t boot_partition, MemoryInfo* mem_info) {
     memset(&__bss_start, 0, (&__end) - (&__bss_start));
     VGA_Initialize(80, 25, (uint8_t*)0xB8000);
     VGA_clrscr();

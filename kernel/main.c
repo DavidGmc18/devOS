@@ -17,14 +17,14 @@ void __attribute__((section(".entry"))) start(const BootParams* const bootParams
     // logf("MAIN", LOGGER_LVL_INFO, "Boot device: %x", bootParams->BootDevice);
 
     // printf("Boot device: %x\n", bootParams->BootDevice);
-    printf("Memory region count: %d\n", bootParams->memory_info.region_count);
+    printf("Memory region count: %d\n", bootParams->memory_info.block_count);
     uint64_t mem = 0;
-    for (int i = 0; i < bootParams->memory_info.region_count; i++) {
+    for (int i = 0; i < bootParams->memory_info.block_count; i++) {
         printf("MEM: start=0x%llx length=0x%llx type=%x\n", 
-            bootParams->memory_info.regions[i].start,
-            bootParams->memory_info.regions[i].length,
-            bootParams->memory_info.regions[i].type);
-        mem += bootParams->memory_info.regions[i].length;
+            bootParams->memory_info.blocks[i].base,
+            bootParams->memory_info.blocks[i].length,
+            bootParams->memory_info.blocks[i].type);
+        mem += bootParams->memory_info.blocks[i].length;
     }
     printf("%lluB\n", mem);
 

@@ -46,7 +46,7 @@ deps: $(BUILD_DIR)/deps/BootLoader-MBR-i686.bin
 
 $(BUILD_DIR)/deps/BootLoader-MBR-i686.bin:
 	mkdir -p $(BUILD_DIR)/deps
-	wget -O $@ https://github.com/DavidGmc18/BootLoader/releases/download/v0.1.0-alpha/BootLoader-MBR-i686.bin
+	wget -O $@ $(BOOTLOADER_URL)
 
 
 #

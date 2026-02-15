@@ -13,7 +13,7 @@ uint8_t* kernel = (uint8_t*)0x104000;
 
 typedef void (*KernelStart)(BootParams*);
 
-void __attribute__((cdecl)) main(uint16_t boot_drive, uint8_t boot_partition) {
+void __attribute__((cdecl)) main(uint16_t boot_drive, uint8_t boot_partition, MemoryInfo* mem_info) {
     memset(&__bss_start, 0, (&__end) - (&__bss_start));
     VGA_Initialize(80, 25, (uint8_t*)0xB8000);
     VGA_clrscr();
@@ -29,7 +29,7 @@ void __attribute__((cdecl)) main(uint16_t boot_drive, uint8_t boot_partition) {
 
     BootParams boot_params = {
         .boot_device = {boot_drive, boot_partition},
-        .memory_info = {0, NULL}
+        .memory_info = *mem_info
     };
 
     // Start kernel

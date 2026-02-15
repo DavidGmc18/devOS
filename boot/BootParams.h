@@ -4,15 +4,15 @@
 #include <driver/ata/ata.h>
 
 typedef struct {
-    uint64_t start;
+    uint64_t base;
     uint64_t length;
     uint32_t type;
     uint32_t ACPI;
-} MemoryRegion;
+} MemoryBlock;
 
 typedef struct {
-    uint32_t region_count;
-    MemoryRegion* regions;
+    uint32_t block_count;
+    MemoryBlock* blocks;
 } MemoryInfo;
 
 typedef struct {

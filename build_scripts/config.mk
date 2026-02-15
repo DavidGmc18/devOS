@@ -33,6 +33,9 @@ BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar
 GCC_VERSION = 15.2.0
 GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-$(GCC_VERSION)/gcc-$(GCC_VERSION).tar.xz
 
+BOOTLOADER_VERSION = v0.2.0-alpha
+BOOTLOADER_URL = https://github.com/DavidGmc18/BootLoader/releases/download/$(BOOTLOADER_VERSION)/BootLoader-MBR-i686.bin
+
 # TODO make drivers portable
 # TODO rename VGA?
 # TODO make e9 driver? RTC? PIC?

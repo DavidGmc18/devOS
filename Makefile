@@ -23,7 +23,7 @@ $(BUILD_DIR)/diskimage.dd: deps boot kernel
 	@dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/partition.img bs=1 count=11 conv=notrunc >/dev/null
 	@dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/partition.img bs=1 skip=43 seek=43 conv=notrunc >/dev/null
 
-# 	@mcopy -i $@ $(BUILD_DIR)/partition.img "::kernel.bin"
+	@mcopy -i $(BUILD_DIR)/partition.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
 
 # 	Copy partition and set MBR
 	@dd if=$(BUILD_DIR)/partition.img of=$@ bs=512 seek=32 conv=notrunc

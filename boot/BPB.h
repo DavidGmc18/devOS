@@ -24,6 +24,6 @@ typedef struct {
     uint32_t volume_id;
 } __attribute__((packed)) _EBPB;
 
-const char OEM_ID[8];
-const _BPB BPB;
-const _EBPB EBPB;
+const extern char OEM_ID[8];
+const extern _BPB BPB;
+const extern _EBPB EBPB;

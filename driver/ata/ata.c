@@ -198,7 +198,8 @@ int ATA_read28(ATA_drive_t disk, uint32_t LBA, uint8_t sectors, void* buffer) {
         return ATA_ERRC_SR_ERR;
     }
 
-    for (int s = 0; s < sectors; s++) {
+    uint16_t sector_count = sectors == 0 ? 256 : sectors;
+    for (int s = 0; s < sector_count; s++) {
         uint32_t timeout = ATA_TIMEOUT;
         while (--timeout) {
             status = i686_inb(base + ATA_REG_STATUS);

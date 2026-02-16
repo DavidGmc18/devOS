@@ -7,11 +7,12 @@
 #include "time.h"
 #include <arch/i686/rtc.h>
 #include <system/memory/page.h>
+#include <system/memory/page.hpp>
 
 extern uint8_t __bss_start;
 extern uint8_t __end;
 
-void __attribute__((section(".entry"))) start(const BootParams* const bootParams) {
+extern "C" void __attribute__((section(".entry"))) start(const BootParams* const bootParams) {
     memset(&__bss_start, 0, (&__end) - (&__bss_start));
     HAL_Initialize();
     PAGE_initialize(&bootParams->memory_info);
@@ -37,11 +38,15 @@ void __attribute__((section(".entry"))) start(const BootParams* const bootParams
     PAGE_free(&b1);
     // PAGE_print(512);
 
-    PAGE_alloc(3);
+    // PAGE_alloc(3);
     // PAGE_print(512);
 
-    printf("\n%d %d", PAGE_address(&b1), PAGE_page_count(&b1));
-    printf("\n%d %d\n", PAGE_address(&b2), PAGE_page_count(&b2));
+    printf("\n%d %d", b1.address, b1.page_count);
+    printf("\n%d %d\n", b2.address, b2.page_count);
+
+    PageOwner owner;
+    owner.alloc(10);
+    printf("%d %d\n", owner.get_address(), owner.get_page_count());
 
 end:
     for (;;);

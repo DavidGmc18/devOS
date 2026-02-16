@@ -133,14 +133,6 @@ void PAGE_free(PAGE_Block* page_block) {
     invalidate_block(page_block);
 }
 
-void* PAGE_address(PAGE_Block* block) {
-    return block->address;
-}
-
-uintptr_t PAGE_page_count(PAGE_Block* block) {
-    return block->page_count;
-}
-
 uintptr_t PAGE_total_mem() {
     return total_mem;
 }

@@ -3,6 +3,14 @@
 #include <stdint.h>
 #include <driver/ata/ata.h>
 
+enum MemoryBlockType {
+    E820_USABLE = 1,
+    E820_RESERVED = 2,
+    E820_ACPI_RECLAIMABLE = 3,
+    E820_ACPI_NVS = 4,
+    E820_BAD_MEMORY = 5,
+};
+
 typedef struct {
     uint64_t base;
     uint64_t length;

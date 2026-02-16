@@ -15,12 +15,12 @@ export TARGET = i686-elf
 export TARGET_ASM = nasm
 export TARGET_ASMFLAGS = -f elf
 export TARGET_CFLAGS = -std=c99 -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(SOURCE_DIR) -I$(SOURCE_DIR)/include -I$(SOURCE_DIR)/src/libs
-export TARGET_CXXFLAGS = -std=c++11 -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(SOURCE_DIR) -I$(SOURCE_DIR)/include -I$(SOURCE_DIR)/src/libs
+export TARGET_CXXFLAGS = -std=c++11 -g -O2 -DDEBUG -ffreestanding -nostdlib -fno-exceptions -I. -I$(SOURCE_DIR) -I$(SOURCE_DIR)/include -I$(SOURCE_DIR)/src/libs
 export TARGET_CC = $(TARGET)-gcc
 export TARGET_CXX = $(TARGET)-g++
 export TARGET_LD = $(TARGET)-gcc
 export TARGET_AR = $(TARGET)-ar
-export TARGET_LINKFLAGS =
+export TARGET_LINKFLAGS = -T linker.ld -nostdlib
 export TARGET_LIBS = -lgcc
 
 export ARCH_i686_LIB = $(BUILD_DIR)/arch/i686.a

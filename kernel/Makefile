@@ -1,5 +1,3 @@
-TARGET_LINKFLAGS += -T linker.ld -nostdlib
-
 HEADERS_ASM = 	$(shell find . -type f -name "*.inc")
 SOURCES_ASM = 	$(shell find . -type f -name "*.asm")
 OBJECTS_ASM = 	$(patsubst %.asm, $(BUILD_DIR)/kernel/asm/%.o, $(SOURCES_ASM))

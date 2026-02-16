@@ -1,5 +1,3 @@
-TARGET_LINKFLAGS += -T linker.ld -nostdlib
-
 HEADERS_C = 	$(shell find . -type f -name "*.h")
 SOURCES_C = 	$(shell find . -type f -name "*.c")
 OBJECTS_C = 	$(patsubst %.c, $(BUILD_DIR)/boot/c/%.o, $(SOURCES_C))

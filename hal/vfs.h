@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -11,3 +15,7 @@ typedef int fd_t;
 #define VFS_FD_DEBUG    3
 
 int VFS_Write(fd_t file, const uint8_t* data, size_t size);
+
+#ifdef __cplusplus
+}
+#endif

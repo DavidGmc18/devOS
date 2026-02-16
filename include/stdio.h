@@ -1,4 +1,9 @@
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdarg.h>
 #include <hal/vfs.h>
@@ -17,3 +22,7 @@ void putc(char ch);
 void puts(const char* str);
 
 void printf(const char* format, ...);
+
+#ifdef __cplusplus
+}
+#endif

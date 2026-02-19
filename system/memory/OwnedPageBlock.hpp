@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-class OwnedPageBlock {
+class OwnedPageBlock final {
     friend class PageAllocator;
 
 protected:
@@ -11,7 +11,11 @@ protected:
 
     OwnedPageBlock(void* addr, size_t count);
 
+private:
+    OwnedPageBlock& operator=(OwnedPageBlock&&);
+
 public:
+    int alloc(size_t num_pages);
     void free();
 
     ~OwnedPageBlock();
@@ -23,5 +27,4 @@ public:
 
     OwnedPageBlock(const OwnedPageBlock& other) = delete;
     OwnedPageBlock& operator=(const OwnedPageBlock&) = delete;
-    OwnedPageBlock& operator=(OwnedPageBlock&&) = delete;
 };

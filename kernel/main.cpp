@@ -63,6 +63,8 @@ extern "C" void __attribute__((section(".entry"))) start(const BootParams* const
     OwnedPageBlock block6 = PageAllocator::alloc(16);
     printf("Block6: 0x%x %dB\n", block6.address, block6.page_count * PageAllocator::PAGE_SIZE);
 
+    block6.alloc(1);
+
 end:
     for (;;);
 }

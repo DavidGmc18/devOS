@@ -40,28 +40,28 @@ extern "C" void __attribute__((section(".entry"))) start(const BootParams* const
 
     {
         OwnedPageBlock block1 = PageAllocator::alloc(5);
-        printf("Block1: 0x%x %dB\n", block1.address, block1.page_count * PageAllocator::PAGE_SIZE);
+        printf("Block1: 0x%x %dB\n", block1.get_address(), block1.get_page_count() * PageAllocator::PAGE_SIZE);
 
         OwnedPageBlock block2 = PageAllocator::alloc(4);
-        printf("Block2: 0x%x %dB\n", block2.address, block2.page_count * PageAllocator::PAGE_SIZE);
+        printf("Block2: 0x%x %dB\n", block2.get_address(), block2.get_page_count() * PageAllocator::PAGE_SIZE);
 
         PageAllocator::free(block1);
-        printf("Block1: 0x%x %dB\n", block1.address, block1.page_count * PageAllocator::PAGE_SIZE);
+        printf("Block1: 0x%x %dB\n", block1.get_address(), block1.get_page_count() * PageAllocator::PAGE_SIZE);
 
         OwnedPageBlock block3 = PageAllocator::alloc(6);
-        printf("Block3: 0x%x %dB\n", block3.address, block3.page_count * PageAllocator::PAGE_SIZE);
+        printf("Block3: 0x%x %dB\n", block3.get_address(), block3.get_page_count() * PageAllocator::PAGE_SIZE);
 
         OwnedPageBlock block4 = PageAllocator::alloc(4);
-        printf("Block4: 0x%x %dB\n", block4.address, block4.page_count * PageAllocator::PAGE_SIZE);
+        printf("Block4: 0x%x %dB\n", block4.get_address(), block4.get_page_count() * PageAllocator::PAGE_SIZE);
 
         OwnedPageBlock block5 = PageAllocator::alloc(1);
-        printf("Block5: 0x%x %dB\n", block5.address, block5.page_count * PageAllocator::PAGE_SIZE);
+        printf("Block5: 0x%x %dB\n", block5.get_address(), block5.get_page_count() * PageAllocator::PAGE_SIZE);
     }
 
     printf("    Used mem        %dB\n", PageAllocator::get_used_memory());
 
     OwnedPageBlock block6 = PageAllocator::alloc(16);
-    printf("Block6: 0x%x %dB\n", block6.address, block6.page_count * PageAllocator::PAGE_SIZE);
+    printf("Block6: 0x%x %dB\n", block6.get_address(), block6.get_page_count() * PageAllocator::PAGE_SIZE);
 
     block6.alloc(1);
 

@@ -157,11 +157,11 @@ OwnedPageBlock PageAllocator::alloc(size_t num_pages) {
 }
 
 void PageAllocator::free(OwnedPageBlock& block) {
-    if (block._page_count == 0)
+    if (block.page_count == 0)
         return;
         
-    PageIndex page = (uintptr_t)block._address / PAGE_SIZE;
-    set_block(page, block._page_count, 0);
-    block._address = NULL;
-    block._page_count = 0;
+    PageIndex page = (uintptr_t)block.address / PAGE_SIZE;
+    set_block(page, block.page_count, 0);
+    block.address = NULL;
+    block.page_count = 0;
 }

@@ -1,6 +1,6 @@
 #include "logger.h"
 #include <stdio.h>
-#include <time.h>
+// #include <time.h>
 
 static const char* g_LogSeverityColors[] = {
     [LOGGER_LVL_DEBUG]  = "\033[2;37m",
@@ -30,9 +30,9 @@ void logf(const char* module, LoggerLevel level, const char* format, ...) {
     fd_t stream = level > LOGGER_LVL_INFO ? VFS_FD_STDERR : VFS_FD_DEBUG;
 
     char time[9];
-    struct tm tm;
-    time_tm(&tm);
-    strftime(time, 9, "%H:%M:%S", &tm);
+    // struct tm tm;
+    // time_tm(&tm);
+    // strftime(time, 9, "%H:%M:%S", &tm);
 
     fputn(g_LogSeverityColors[level], stream, g_LogSeverityColorsLen[level]);
     fprintf(stream, "%s [%s] ", time, module);

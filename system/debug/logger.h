@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MIN_LOG_LEVEL LOGGER_LVL_INFO
 
 typedef enum {
@@ -11,3 +15,7 @@ typedef enum {
 } LoggerLevel;
 
 void logf(const char* module, LoggerLevel level, const char* format, ...);
+
+#ifdef __cplusplus
+}
+#endif

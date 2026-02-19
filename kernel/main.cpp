@@ -3,7 +3,7 @@
 #include "memory.h"
 #include <hal/hal.h>
 #include <boot/BootParams.h>
-#include "logger.h"
+#include <system/debug/logger.h>
 #include "time.h"
 #include <arch/i686/rtc.h>
 #include <system/memory/PageAllocator.hpp>

@@ -17,22 +17,22 @@ all: kernel
 kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(OBJECTS_CPP) $(FAT_DRIVER) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC) $(SYSTEM)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS) $(FAT_DRIVER) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC) $(SYSTEM)
+	@i686-elf-gcc $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS) $(FAT_DRIVER) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC) $(SYSTEM)
 	@echo "--> Created:  kernel.bin"
 
 $(BUILD_DIR)/kernel/asm/%.o: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
-	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
+	@nasm $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/kernel/c/%.o: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
-	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
+	@i686-elf-gcc $(TARGET_CFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/kernel/cpp/%.o: %.cpp $(HEADERS_CPP)
 	@mkdir -p $(@D)
-	@$(TARGET_CXX) $(TARGET_CXXFLAGS) -c -o $@ $<
+	@i686-elf-g++ $(TARGET_CXXFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 clean:

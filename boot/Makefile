@@ -14,17 +14,17 @@ boot: $(BUILD_DIR)/boot.bin
 
 $(BUILD_DIR)/boot.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
 	@mkdir -p $(@D)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/boot.map -o $@ $^ $(TARGET_LIBS) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
+	@i686-elf-gcc $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/boot.map -o $@ $^ $(TARGET_LIBS) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
 	@echo "--> Created  boot.bin"
 
 $(BUILD_DIR)/boot/c/%.o: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
-	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
+	@i686-elf-gcc $(TARGET_CFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/boot/asm/%.o: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
-	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
+	@nasm $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
 
 clean:

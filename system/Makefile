@@ -14,15 +14,15 @@ system: $(SYSTEM)
 
 $(SYSTEM): $(OBJECTS_C) $(OBJECTS_CPP)
 	@mkdir -p $(@D)
-	@$(TARGET_AR) rcs $@ $^
+	@i686-elf-ar rcs $@ $^
 	@echo "--> Created:  system.a"
 
 $(BUILD_DIR)/system/c/%.o: %.c $(HEADERS_C) $(HEADERS_CPP)
 	@mkdir -p $(@D)
-	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
+	@i686-elf-gcc $(TARGET_CFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/system/cpp/%.o: %.cpp $(HEADERS_C) $(HEADERS_CPP)
 	@mkdir -p $(@D)
-	@$(TARGET_CXX) $(TARGET_CXXFLAGS) -c -o $@ $<
+	@i686-elf-g++ $(TARGET_CXXFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<

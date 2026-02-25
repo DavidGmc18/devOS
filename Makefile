@@ -4,8 +4,6 @@ include build_scripts/config.mk
 
 all: disk_image
 
-include build_scripts/toolchain.mk
-
 #
 # Disk image
 #

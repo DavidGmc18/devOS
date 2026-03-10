@@ -1,27 +1,26 @@
 bits 32
 
-extern main
-global entry
+extern start
 
 section .entry
-entry:
-    jmp short start
+    jmp short setup_stack
     nop
 
+section .text
+setup_stack:
+    pop eax ; discard return address
+    pop eax ; BL_BootInfo*
+    pop ebx ; BL_BootServices*
 
-section .start
-start:
+    mov esp, 0x08000
+    xor ebp, ebp
 
-    pop eax ; (return adress)
-    pop ebx ; ATA_drive_t boot_drive
-    pop ecx ; uint8_t boot_partition
-    pop edx ; MemoryInfo* mem_info
-
-    mov esp, 0x200000
-
-    push edx
-    push ecx
     push ebx
-    call main
+    push eax
+    call start
 
-    jmp start
+reboot:
+    mov al, 0xFE
+    out 0x64, al
+    hlt
+    jmp reboot

@@ -1,6 +1,0 @@
-- drop floppy support
-- reuse first data sector calculation from stage1
-- rename DAP capability to Extended...... or check as well for EDD (Enhanced Disk Drive Specification) support
-- rename MDB to Boot info
-- Fix IntelliSense or use clangd
-- resolve printk vs printf situation

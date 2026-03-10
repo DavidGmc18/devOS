@@ -1,78 +1,85 @@
-include build_scripts/config.mk
+include config.mk
+.PHONY: all deps disk_image boot kernel build_dir deps_dir clean purge
 
-.PHONY: all disk_image boot kernel clean always
-
-all: disk_image
-
-#
-# Disk image
-#
-disk_image: $(BUILD_DIR)/diskimage.dd
-
-$(BUILD_DIR)/diskimage.dd: deps boot kernel
-#	Create image with MBR BootLoader
-	@dd if=/dev/zero of=$@ bs=512 count=8192 >/dev/null
-	@dd if=$(BUILD_DIR)/deps/BootLoader-MBR-i686.bin of=$@ conv=notrunc >/dev/null
-
-# 	Create Partition
-	@dd if=/dev/zero of=$(BUILD_DIR)/partition.img bs=512 count=8160 >/dev/null
-	@mkfs.fat -F 16 -R 32 -s 1 -n "NBOS" $(BUILD_DIR)/partition.img >/dev/null
-
-	@dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/partition.img bs=1 count=11 conv=notrunc >/dev/null
-	@dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/partition.img bs=1 skip=43 seek=43 conv=notrunc >/dev/null
-
-	@mcopy -i $(BUILD_DIR)/partition.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
-
-# 	Copy partition and set MBR
-	@dd if=$(BUILD_DIR)/partition.img of=$@ bs=512 seek=32 conv=notrunc
-	@echo '80' | xxd -r -p | dd of=build/diskimage.dd bs=1 seek=446 conv=notrunc
-	@echo '20' /| xxd -r -p | dd of=build/diskimage.dd bs=1 seek=454 conv=notrunc
-	@echo 'E01F' /| xxd -r -p | dd of=build/diskimage.dd bs=1 seek=458 conv=notrunc
-
-	@echo "--> Created: " $@
-
+all: deps disk_image
 
 #
 # Dependencies
 #
-deps: $(BUILD_DIR)/deps/BootLoader-MBR-i686.bin
-	@$(MAKE) -C $(SOURCE_DIR)/arch/i686 BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/hal BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/system BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/lib BUILD_DIR=$(abspath $(BUILD_DIR))
-	@$(MAKE) -C $(SOURCE_DIR)/driver BUILD_DIR=$(abspath $(BUILD_DIR))
+deps: deps_dir $(BOOTLOADER_BIN)
 
-$(BUILD_DIR)/deps/BootLoader-MBR-i686.bin:
-	mkdir -p $(BUILD_DIR)/deps
-	wget -O $@ $(BOOTLOADER_URL)
+$(BOOTLOADER_BIN):
+	@wget -O $@ $(BOOTLOADER_GIT)/releases/download/$(BOOTLOADER_VERSION)/BootLoader-MBR-i686.bin
+	@git clone --depth=1 --filter=blob:none --sparse --branch $(BOOTLOADER_VERSION) $(BOOTLOADER_GIT) $(DEPS_DIR)/tmp/bootloader
+	@cd $(DEPS_DIR)/tmp/bootloader && git sparse-checkout set include
+	@cp -r $(DEPS_DIR)/tmp/bootloader/include/* $(DEPS_INCLUDE)/
+	@rm -rf $(DEPS_DIR)/tmp/bootloader
 
+#
+# Disk Image
+#
+disk_image: $(DISK_IMAGE)
+
+PARTITION_OFFSET = $(shell expr $(BOOTLOADER_RESERVED_SECTORS) \* $(DISK_IMAGE_BS))
+
+$(DISK_IMAGE): boot #kernel
+	@dd if=/dev/zero of=$@ bs=$(DISK_IMAGE_BS) count=$(DISK_IMAGE_SECTORS) >/dev/null
+	@dd if=$(BOOTLOADER_BIN) of=$@ conv=notrunc >/dev/null
+	@echo "$(BOOTLOADER_RESERVED_SECTORS),,b,*" | sfdisk $@ 2>/dev/null | grep "Created a new partition"
+
+	@mformat -i $@@@$$(( $(BOOTLOADER_RESERVED_SECTORS) * $(DISK_IMAGE_BS) )) -F -R 32 -s 1 -v "NBOS" ::
+	@dd if=$(BOOT_BIN) of=$@ bs=1 count=11 seek=$$(( $(BOOTLOADER_RESERVED_SECTORS) * $(DISK_IMAGE_BS) )) conv=notrunc >/dev/null
+	@dd if=$(BOOT_BIN) of=$@ bs=1 skip=43 seek=$$(( $(BOOTLOADER_RESERVED_SECTORS) * $(DISK_IMAGE_BS) + 43 )) conv=notrunc >/dev/null
+# 	@mcopy -i $@@@$(PARTITION_OFFSET) $(KERNEL_BIN) "::kernel.bin"
 
 #
 # Boot
 #
-boot: $(BUILD_DIR)/boot.bin
+boot: $(BOOT_BIN)
 
-$(BUILD_DIR)/boot.bin: always
-	@$(MAKE) -C boot BUILD_DIR=$(abspath $(BUILD_DIR))
+$(BOOT_BIN): build_dir
+	@$(MAKE) -C boot BUILD_DIR=$(BUILD_DIR)
 
+# #
+# # Kernel
+# #
+# kernel: $(KERNEL_BIN)
+
+# $(KERNEL_BIN): build_dir
+# 	@$(MAKE) -C kernel BUILD_DIR=$(BUILD_DIR)
 
 #
-# Kernel
+# Run
 #
-kernel: $(BUILD_DIR)/kernel.bin
+run:
+	@qemu-system-i386 \
+	-debugcon stdio \
+	-machine q35,smbus=off \
+	-cpu pentium3 \
+	-m 256M \
+	-nodefaults \
+	-device ich9-ahci,id=ahci \
+	-drive file=$(DISK_IMAGE),id=disk0,format=raw,if=none \
+	-device ide-hd,drive=disk0,bus=ahci.0 \
+	-vga std
 
-$(BUILD_DIR)/kernel.bin: always
-	@$(MAKE) -C kernel BUILD_DIR=$(abspath $(BUILD_DIR))
-
 #
-# Always
+# Util
 #
-always:
+build_dir:
 	@mkdir -p $(BUILD_DIR)
+	@if [ "$(BUILD_ON_RAM)" = "1" ]; then \
+		mountpoint -q $(BUILD_DIR) || sudo mount -t tmpfs -o size=$(BUILD_ON_RAM_SIZE) tmpfs $(BUILD_DIR); \
+	else \
+		mountpoint -q $(BUILD_DIR) && sudo umount $(BUILD_DIR) || true; \
+	fi
 
-#
-# Clean
-#
+deps_dir:
+	@mkdir -p $(DEPS_BIN)
+	@mkdir -p $(DEPS_INCLUDE)
+
 clean:
-	@$(MAKE) -C kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	@rm -rf $(BUILD_DIR)/*
+	@test -n "$(BUILD_DIR)" && rm -rf $(BUILD_DIR)/*
+
+purge:
+	@test -n "$(DEPS_DIR)" && rm -rf $(DEPS_DIR)/*

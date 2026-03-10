@@ -1,3 +1,0 @@
-qemu-system-i386 -debugcon stdio \
--hda build/diskimage.dd \
--m 256

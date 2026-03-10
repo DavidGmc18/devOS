@@ -1,31 +1,28 @@
-HEADERS_C = 	$(shell find . -type f -name "*.h")
-SOURCES_C = 	$(shell find . -type f -name "*.c")
-OBJECTS_C = 	$(patsubst %.c, $(BUILD_DIR)/boot/c/%.o, $(SOURCES_C))
+HEADERS_C = $(shell find . -type f -name "*.h")
+SOURCES_C = $(shell find . -type f -name "*.c")
+OBJECTS_C = $(patsubst %.c, $(BUILD_DIR)/boot/c/%.o, $(SOURCES_C))
 
-HEADERS_ASM = 	$(shell find . -type f -name "*.inc")
-SOURCES_ASM = 	$(shell find . -type f -name "*.asm")
-OBJECTS_ASM = 	$(patsubst %.asm, $(BUILD_DIR)/boot/asm/%.o, $(SOURCES_ASM))
+HEADERS_ASM = $(shell find . -type f -name "*.inc")
+SOURCES_ASM = $(shell find . -type f -name "*.asm")
+OBJECTS_ASM = $(patsubst %.asm, $(BUILD_DIR)/boot/asm/%.o, $(SOURCES_ASM))
 
-.PHONY: all boot clean always
+.PHONY: all boot
 
 all: boot
 
-boot: $(BUILD_DIR)/boot.bin
+boot: $(BOOT_BIN)
 
-$(BUILD_DIR)/boot.bin: $(OBJECTS_ASM) $(OBJECTS_C) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
+$(BOOT_BIN): $(OBJECTS_ASM) $(OBJECTS_C)
 	@mkdir -p $(@D)
-	@i686-elf-gcc $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/boot.map -o $@ $^ $(TARGET_LIBS) $(ATA_DRIVER) $(VGA_DRIVER) $(ARCH_i686_LIB) $(HAL_LIB) $(LIBC)
+	@i686-elf-gcc -T linker.ld -nostdlib -Wl,-Map=$(BUILD_DIR)/boot.map -o $@ $^ -lgcc
 	@echo "--> Created  boot.bin"
 
 $(BUILD_DIR)/boot/c/%.o: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
-	@i686-elf-gcc $(TARGET_CFLAGS) -c -o $@ $<
+	@i686-elf-gcc -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(DEPS_INCLUDE) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/boot/asm/%.o: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
-	@nasm $(TARGET_ASMFLAGS) -o $@ $<
+	@nasm -f elf32 -o $@ $<
 	@echo "--> Compiled: " $<
-
-clean:
-	@rm -f $(BUILD_DIR)/boot.bin

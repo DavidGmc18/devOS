@@ -1,13 +1,14 @@
-ENTRY(entry)
+ENTRY(start)
 OUTPUT_FORMAT("binary")
-phys = 0x100000;
+phys = 0x00100000;
 
 MEMORY {
-    RAM (rwx) : ORIGIN = 0x100000, LENGTH = 0x010000
-    STACK (rw) : ORIGIN = 0x1F0000, LENGTH = 0x10000
+    BOOTLOADER (!rwx) : ORIGIN = 0x00000500, LENGTH = 0x00019B00
+    RAM (rwx) :         ORIGIN = 0x00100000, LENGTH = 0x00100000
 }
 
-SECTIONS {
+SECTIONS
+{
     . = phys;
 
     .entry : {
@@ -16,19 +17,18 @@ SECTIONS {
     } > RAM
 
     .oem_id : {
+        __oem_id_start = .;
         *(.oem_id)
     } > RAM
 
     .bpb : {
+        __bpb_start = .;
         *(.bpb)
     } > RAM
 
     .ebpb : {
+        __ebpb_start = .;
         *(.ebpb)
-    } > RAM
-
-    .start : {
-        *(.start)
     } > RAM
 
     .text : {

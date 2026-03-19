@@ -1,55 +1,38 @@
-ENTRY(start)
+ENTRY(entry)
 OUTPUT_FORMAT("binary")
-phys = 0x00100000;
 
 MEMORY {
-    BOOTLOADER (!rwx) : ORIGIN = 0x00000500, LENGTH = 0x00019B00
-    RAM (rwx) :         ORIGIN = 0x00100000, LENGTH = 0x00100000
+    BOOTLOADER (!rwx) : ORIGIN = 0x00000500, LENGTH = 0x00020000
+    RAM (rwx) :         ORIGIN = 0x00020000, LENGTH = 0x00080000
 }
 
-SECTIONS
-{
-    . = phys;
+SECTIONS {
+    .vbr : AT(0x0000) {
+        KEEP(*(.vbr))
+    }
+    ASSERT(SIZEOF(.vbr) <= 512, "ERROR: .vbr exceeds 512 bytes!")
 
-    .entry : {
-        __entry_start = .;
+    .fsi : AT(0x0200) {
+        KEEP(*(.fsi))
+    }
+    ASSERT(SIZEOF(.fsi) <= 512, "ERROR: .fsi exceeds 512 bytes!")
+
+    .text ORIGIN(RAM) : AT(0x0400) {
         *(.entry)
-    } > RAM
-
-    .oem_id : {
-        __oem_id_start = .;
-        *(.oem_id)
-    } > RAM
-
-    .bpb : {
-        __bpb_start = .;
-        *(.bpb)
-    } > RAM
-
-    .ebpb : {
-        __ebpb_start = .;
-        *(.ebpb)
-    } > RAM
-
-    .text : {
-        __text_start = .;
         *(.text)
     } > RAM
 
     .data : {
-        __data_start = .;
         *(.data)
     } > RAM
 
     .rodata : {
-        __rodata_start = .;
         *(.rodata)
     } > RAM
 
     .bss : {
         __bss_start = .;
         *(.bss)
+        __bss_end = .;
     } > RAM
-    
-    __end = .;
 }

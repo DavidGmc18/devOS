@@ -1,43 +1,24 @@
 #include <bl/boot.h>
 #include <string.h>
+#include "fat.h"
 
 extern uint8_t __bss_start;
-extern uint8_t __end;
+extern uint8_t __bss_end;
 
-extern uint8_t __entry_start;
-extern uint8_t __oem_id_start;
-extern uint8_t __bpb_start;
-extern uint8_t __ebpb_start;
-extern uint8_t __text_start;
+void __attribute__((cdecl, noreturn, section(".entry"))) entry(BL_BootInfo* boot_info, BL_BootServices* boot_services) {
+    memset(&__bss_start, 0, (&__bss_end) - (&__bss_start));
 
-void start(BL_BootInfo* boot_info, BL_BootServices* boot_services) {
-    memset(&__bss_start, 0, (&__end) - (&__bss_start));
+    // 1. Load kernel.bin into mem -> FAT
+    // 2. Enter Long-mode -> Research
+    // 3. Jump to kernel
 
-    boot_services->printk("TEST!!!\n");
+    FAT_init(boot_services->disk_read);
+    FAT_dev dev;
+    FAT_dev_init(&dev, &boot_info->disk);
+    boot_services->printk("lba=%d sectors=%d fat=%d root_dir=%d data=%d sectors_per_cluster=%d\n", dev.lba, dev.sectors, dev.fat, dev.root_dir_cluster, dev.data, dev.sectors_per_cluster);
 
-    boot_services->printk("boot_info = {\n");
-    boot_services->printk("  disk = {\n");
-    boot_services->printk("    abar = 0x%x\n", boot_info->disk.abar);
-    boot_services->printk("    port = %d\n", boot_info->disk.port);
-    boot_services->printk("    partition = {\n");
-    boot_services->printk("      id = %d\n", boot_info->disk.partition.id);
-    boot_services->printk("      lba = %d\n", boot_info->disk.partition.lba);
-    boot_services->printk("      sectors = %d\n", boot_info->disk.partition.sectors);
-    boot_services->printk("    }\n");
-    boot_services->printk("  drive_name = '%s'\n", boot_info->disk.drive_name);
-    boot_services->printk("  memory_info = {\n");
-    boot_services->printk("    block_count = %d\n", boot_info->memory_info.block_count);
-    boot_services->printk("    blocks[256]\n");
-    boot_services->printk("  }\n");
-    boot_services->printk("}\n");
+    FAT_read(&dev, "system/kernel.bin", (void*)0x100000);
+    boot_services->printk((char*)0x100000);
 
-    uint16_t buffer[256];
-    boot_services->disk_read(boot_info->disk.abar, boot_info->disk.port, (BL_LBA48){0}, 1, buffer);
-    boot_services->printk("Test disk read => 0x%x\n", buffer[255]);
-
-    boot_services->printk("0x%x 0x%x 0x%x 0x%x 0x%x\n", &__entry_start, &__oem_id_start, &__bpb_start, &__ebpb_start,  &__text_start);
-
-    
-    
     while (1) __asm__ volatile ("hlt" ::: "memory");
 }

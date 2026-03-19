@@ -27,10 +27,13 @@ $(DISK_IMAGE): boot #kernel
 	@dd if=$(BOOTLOADER_BIN) of=$@ conv=notrunc >/dev/null
 	@echo "$(BOOTLOADER_RESERVED_SECTORS),,b,*" | sfdisk $@ 2>/dev/null | grep "Created a new partition"
 
-	@mformat -i $@@@$$(( $(BOOTLOADER_RESERVED_SECTORS) * $(DISK_IMAGE_BS) )) -F -R 32 -s 1 -v "NBOS" ::
-	@dd if=$(BOOT_BIN) of=$@ bs=1 count=11 seek=$$(( $(BOOTLOADER_RESERVED_SECTORS) * $(DISK_IMAGE_BS) )) conv=notrunc >/dev/null
-	@dd if=$(BOOT_BIN) of=$@ bs=1 skip=43 seek=$$(( $(BOOTLOADER_RESERVED_SECTORS) * $(DISK_IMAGE_BS) + 43 )) conv=notrunc >/dev/null
+	@dd if=$(BOOT_BIN) of=$@ bs=512 seek=32 conv=notrunc >/dev/null
+	@mformat -i $@@@$(PARTITION_OFFSET) -F -R $(RESERVED_SECTORS) -v "NBOS" -k ::
+
+#	TODO this is just for test
 # 	@mcopy -i $@@@$(PARTITION_OFFSET) $(KERNEL_BIN) "::kernel.bin"
+	@mmd -i $@@@$(PARTITION_OFFSET) "::system"
+	@mcopy -i $@@@$(PARTITION_OFFSET) test.txt "::system/kernel.bin" 
 
 #
 # Boot
@@ -39,6 +42,10 @@ boot: $(BOOT_BIN)
 
 $(BOOT_BIN): build_dir
 	@$(MAKE) -C boot BUILD_DIR=$(BUILD_DIR)
+	@if [ $$(wc -c < $(BOOT_BIN)) -gt $$(( $(RESERVED_SECTORS) * 512 )) ]; then \
+        echo "ERROR: boot.bin too large!"; \
+        exit 1; \
+    fi
 
 # #
 # # Kernel

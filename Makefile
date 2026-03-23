@@ -58,7 +58,6 @@ $(KERNEL_BIN): build_dir
 #
 run:
 	@qemu-system-x86_64 \
-	-debugcon stdio \
 	-machine q35,smbus=off \
 	-cpu qemu64 \
 	-m 256M \
@@ -66,7 +65,7 @@ run:
 	-device ich9-ahci,id=ahci \
 	-drive file=$(DISK_IMAGE),id=disk0,format=raw,if=none \
 	-device ide-hd,drive=disk0,bus=ahci.0 \
-	-vga std
+	-vga std -serial stdio
 
 #
 # Util

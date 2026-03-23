@@ -22,7 +22,7 @@ disk_image: $(DISK_IMAGE)
 
 PARTITION_OFFSET = $(shell expr $(BOOTLOADER_RESERVED_SECTORS) \* $(DISK_IMAGE_BS))
 
-$(DISK_IMAGE): boot #kernel
+$(DISK_IMAGE): boot kernel
 	@dd if=/dev/zero of=$@ bs=$(DISK_IMAGE_BS) count=$(DISK_IMAGE_SECTORS) >/dev/null
 	@dd if=$(BOOTLOADER_BIN) of=$@ conv=notrunc >/dev/null
 	@echo "$(BOOTLOADER_RESERVED_SECTORS),,b,*" | sfdisk $@ 2>/dev/null | grep "Created a new partition"
@@ -30,10 +30,8 @@ $(DISK_IMAGE): boot #kernel
 	@dd if=$(BOOT_BIN) of=$@ bs=512 seek=32 conv=notrunc >/dev/null
 	@mformat -i $@@@$(PARTITION_OFFSET) -F -R $(RESERVED_SECTORS) -v "NBOS" -k ::
 
-#	TODO this is just for test
-# 	@mcopy -i $@@@$(PARTITION_OFFSET) $(KERNEL_BIN) "::kernel.bin"
 	@mmd -i $@@@$(PARTITION_OFFSET) "::system"
-	@mcopy -i $@@@$(PARTITION_OFFSET) test.txt "::system/kernel.bin" 
+	@mcopy -i $@@@$(PARTITION_OFFSET) $(KERNEL_BIN) "::system/kernel.bin"
 
 #
 # Boot
@@ -47,22 +45,22 @@ $(BOOT_BIN): build_dir
         exit 1; \
     fi
 
-# #
-# # Kernel
-# #
-# kernel: $(KERNEL_BIN)
+#
+# Kernel
+#
+kernel: $(KERNEL_BIN)
 
-# $(KERNEL_BIN): build_dir
-# 	@$(MAKE) -C kernel BUILD_DIR=$(BUILD_DIR)
+$(KERNEL_BIN): build_dir
+	@$(MAKE) -C kernel BUILD_DIR=$(BUILD_DIR)
 
 #
 # Run
 #
 run:
-	@qemu-system-i386 \
+	@qemu-system-x86_64 \
 	-debugcon stdio \
 	-machine q35,smbus=off \
-	-cpu pentium3 \
+	-cpu qemu64 \
 	-m 256M \
 	-nodefaults \
 	-device ich9-ahci,id=ahci \

@@ -2,23 +2,43 @@
 #include <string.h>
 #include "fat.h"
 
+// TODO test FAT
+
 extern uint8_t __bss_start;
 extern uint8_t __bss_end;
+
+#define PT_PRESENT 1
+#define PT_WRITABLE 2
+__attribute__((aligned(4096))) uint64_t pml4[512];
+__attribute__((aligned(4096))) uint64_t pdpt[512];
+__attribute__((aligned(4096))) uint64_t pd[512];
+__attribute__((aligned(4096))) uint64_t pt[512];
+
+extern void kernel64_entry(void* pml4_addr, void* kernel_addr);
 
 void __attribute__((cdecl, noreturn, section(".entry"))) entry(BL_BootInfo* boot_info, BL_BootServices* boot_services) {
     memset(&__bss_start, 0, (&__bss_end) - (&__bss_start));
 
-    // 1. Load kernel.bin into mem -> FAT
-    // 2. Enter Long-mode -> Research
-    // 3. Jump to kernel
-
+// Load kernel
     FAT_init(boot_services->disk_read);
     FAT_dev dev;
     FAT_dev_init(&dev, &boot_info->disk);
-    boot_services->printk("lba=%d sectors=%d fat=%d root_dir=%d data=%d sectors_per_cluster=%d\n", dev.lba, dev.sectors, dev.fat, dev.root_dir_cluster, dev.data, dev.sectors_per_cluster);
+    void* kernel_addr = (void*)0x100000;
+    int err = FAT_read(&dev, "system/kernel.bin", kernel_addr);
+    boot_services->printk("FAT_READ_ERR=%d\n", err);
 
-    FAT_read(&dev, "system/kernel.bin", (void*)0x100000);
-    boot_services->printk((char*)0x100000);
+// Enter Long-mode & jump to kernel
+    memset(pml4, 0, 4096);
+    memset(pdpt, 0, 4096);
+    memset(pd, 0, 4096);
+    memset(pt, 0, 4096);
+    pml4[0] = (uint64_t)(uintptr_t)pdpt | PT_PRESENT | PT_WRITABLE;
+    pdpt[0] = (uint64_t)(uintptr_t)pd | PT_PRESENT | PT_WRITABLE;
+    pd[0] = (uint64_t)(uintptr_t)pt | PT_PRESENT | PT_WRITABLE;
+    for (int i = 0; i < 512; i++)
+        pt[i] = (uint64_t)(i * 0x1000) | PT_PRESENT | PT_WRITABLE;
+
+    kernel64_entry(pml4, kernel_addr);
 
     while (1) __asm__ volatile ("hlt" ::: "memory");
 }

@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <driver/UART/UART.h>
 #include <driver/VGA/VGA.h>
-#include <lib/printk.h>
+#include <printk.h>
 
 void __attribute__((noreturn, section(".entry"))) entry() {
     UART_init();
@@ -12,6 +12,7 @@ void __attribute__((noreturn, section(".entry"))) entry() {
         .write = UART_log_write
     };
     printk_sink_register(sink_uart);
+
     printk_sink_t sink_vga = {
         .name = "VGA     ",
         .write = VGA_log_write
@@ -27,6 +28,8 @@ void __attribute__((noreturn, section(".entry"))) entry() {
     printk(KERN_ALERT "ALERT\n");
     printk(KERN_EMERG "EMERG\n");
     printk("TEST\n");
+
+    printk("TEST%+10d\n", 1234);
 
     while (1) __asm__ volatile ("hlt" ::: "memory");
 }

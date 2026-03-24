@@ -17,5 +17,5 @@ $(KERNEL_BIN): $(OBJECTS_ASM) $(OBJECTS_C)
 
 $(BUILD_DIR)/c/%.o: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
-	@x86_64-elf-gcc -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(SOURCE_DIR) -c -o $@ $<
+	@x86_64-elf-gcc -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(SOURCE_DIR) -I$(INCLUDE_DIR) -c -o $@ $<
 	@echo "--> Compiled: " $<

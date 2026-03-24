@@ -1,6 +1,8 @@
-#include "printk.h"
-#include <lib/string.h>
+#include <printk.h>
 #include <stddef.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include "printf.h"
 
 #define BUFFER_SIZE 256
 static char buffer[BUFFER_SIZE];
@@ -23,7 +25,7 @@ static void flush() {
     buffer_fill = 0;
 }
 
-static void putc(char ch) {
+void _putchar(char ch) {
     buffer[buffer_fill++] = ch;
     if (buffer_fill >= BUFFER_SIZE) {
         flush();
@@ -32,6 +34,9 @@ static void putc(char ch) {
 }
 
 void printk(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+
     buffer_fill = 0;
     if (format[0] == '\001' && format[1]) {
         level = format[1] - '0';
@@ -40,12 +45,10 @@ void printk(const char* format, ...) {
         level = DEFAULT_LEVEL;
     }
 
-    while (*format) {
-        // TODO
-        putc(*format++);
-    }
+    vprintf_(format, args);
 
     flush();
+    va_end(args);
 }
 
 printk_sink_t* printk_sink_register(printk_sink_t sink) {

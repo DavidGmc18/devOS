@@ -1,114 +1,69 @@
 #include "printk.h"
-#include <driver/UART.h>
+#include <lib/string.h>
+#include <stddef.h>
 
-static void fnputs(void (*putc)(char), const char* str) {
-    while (*str) {
-        putc(*str++);
-    }
-}
+#define BUFFER_SIZE 256
+static char buffer[BUFFER_SIZE];
+static unsigned long buffer_fill;
 
-static char digits[16] = "0123456789ABCDEF";
+#define DEFAULT_LEVEL 7
+static int level;
 
-static void fnprint_unsigned(void (*putc)(char), unsigned int num, unsigned int radix) {
-    if (radix < 2 || radix > 16) {
-        fnputs(putc, "BAD_RADIX");
-        return;
-    }
+#define MAX_SINKS 8
+static printk_sink_t sinks[MAX_SINKS];
 
-    if (num == 0) {
-        putc('0');
-        return;
-    }
+static void flush() {
+    if (!buffer_fill) return;
 
-    char buffer[32];
-    int i = 0;
-    while (num > 0) {
-        buffer[i++] = digits[num % radix];
-        num /= radix;
-    }
-
-    while (i-- > 0) {
-        putc(buffer[i]);
-    }
-}
-
-static void fnprint_signed(void (*putc)(char), int num, unsigned int radix) {
-    if (num < 0) {
-        putc('-');
-        num = -num;
-    }
-    fnprint_unsigned(putc, (int)num, radix);
-}
-
-void vfnprintk(void (*putc)(char), const char* format, va_list args) {
-    int specifier = 0;
-
-    while (*format) {
-        if (!specifier) {
-            switch (*format) {
-                case '%':
-                    specifier = 1;
-                    break;
-
-                default:
-                    putc(*format);
-                    break;
-            }
-        } else {
-            switch (*format) {
-                case 's':
-                    fnputs(putc, va_arg(args, const char*));
-                    break;
-
-                case 'c':
-                    putc((char)va_arg(args, int));
-                    break;
-
-                case 'd':
-                case 'i':
-                    fnprint_signed(putc, va_arg(args, int), 10);
-                    break;
-
-                case 'u':
-                    fnprint_unsigned(putc, va_arg(args, unsigned int), 10);
-                    break;
-
-                case 'x':
-                case 'X':
-                    fnprint_unsigned(putc, va_arg(args, unsigned int), 16);
-                    break;    
-            
-                default:
-                    putc('%');
-                    putc(*format);
-                    break;
-            }
-            specifier = 0;
+    for (int i = 0; i < MAX_SINKS; i++) {
+        if (sinks[i].name[0]) {
+            sinks[i].write(level, buffer, buffer_fill);
         }
-        format++;
     }
+    buffer_fill = 0;
 }
 
-void fnprintk(void (*putc)(char), const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    vfnprintk(putc, format, args);
-    va_end(args);
-}
-
-static void (*outfn)(char) = UART_putc;
-
-void printk_set_outfn(void (*putc)(char)) {
-    outfn = putc;
-}
-
-void vprintk(const char* format, va_list args) {
-    vfnprintk(outfn, format, args);
+static void putc(char ch) {
+    buffer[buffer_fill++] = ch;
+    if (buffer_fill >= BUFFER_SIZE) {
+        flush();
+        buffer_fill = 0;
+    }
 }
 
 void printk(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    vfnprintk(outfn, format, args);
-    va_end(args);
+    buffer_fill = 0;
+    if (format[0] == '\001' && format[1]) {
+        level = format[1] - '0';
+        format += 2;
+    } else {
+        level = DEFAULT_LEVEL;
+    }
+
+    while (*format) {
+        // TODO
+        putc(*format++);
+    }
+
+    flush();
+}
+
+printk_sink_t* printk_sink_register(printk_sink_t sink) {
+    if (!sink.name[0])
+        return NULL;
+
+    for (int i = 0; i < MAX_SINKS; i++) {
+        if (!sinks[i].name[0]) {
+            sinks[i] = sink;
+            return sinks+i;
+        }
+    }
+    return NULL;
+}
+
+int printk_sink_unregister(printk_sink_t *sink) {
+    if (sink < sinks || sink >= (sinks + MAX_SINKS))
+        return -1; 
+    sink->name[0] = 0;
+    return 0;
 }

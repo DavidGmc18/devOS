@@ -39,8 +39,43 @@ int UART_init() {
     return !uart_present;
 }
 
-void UART_putc(char c) {
+void UART_putc(char ch) {
     if (!uart_present) return;
     while (!(inb(PORT + REG_LSR) & BSY)) iowait();
-    outb(PORT + REG_DATA, c);
+    outb(PORT + REG_DATA, ch);
+}
+
+void UART_puts(const char* str) {
+    if (!uart_present) return;
+    while (*str) {
+        while (!(inb(PORT + REG_LSR) & BSY)) iowait();
+        outb(PORT + REG_DATA, *str++);
+    }
+}
+
+void UART_write(const char* str, unsigned long n) {
+    if (!uart_present) return;
+    for (unsigned long i = 0; i < n; i ++) {
+        while (!(inb(PORT + REG_LSR) & BSY)) iowait();
+        outb(PORT + REG_DATA, str[i]);
+    }
+}
+
+static const char* get_level_ansi(int level) {
+    switch (level) {
+        case 0: return "\033[1;37;41m";
+        case 1: return "\033[1;31m";
+        case 2:
+        case 3: return "\033[0;91m";
+        case 4: return "\033[0;93m";
+        case 5: return "\033[0;97m";
+        default: return "\033[0m";
+    }
+}
+
+void UART_log_write(int level, const char *str, unsigned long n) {
+    if (!uart_present) return;
+    UART_puts(get_level_ansi(level));
+    UART_write(str, n);
+    UART_puts("\033[0m");
 }

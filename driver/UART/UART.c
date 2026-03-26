@@ -41,14 +41,14 @@ int UART_init() {
 
 void UART_putc(char ch) {
     if (!uart_present) return;
-    while (!(inb(PORT + REG_LSR) & BSY)) iowait();
+    while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
     outb(PORT + REG_DATA, ch);
 }
 
 void UART_puts(const char* str) {
     if (!uart_present) return;
     while (*str) {
-        while (!(inb(PORT + REG_LSR) & BSY)) iowait();
+        while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
         outb(PORT + REG_DATA, *str++);
     }
 }
@@ -56,7 +56,7 @@ void UART_puts(const char* str) {
 void UART_write(const char* str, unsigned long n) {
     if (!uart_present) return;
     for (unsigned long i = 0; i < n; i ++) {
-        while (!(inb(PORT + REG_LSR) & BSY)) iowait();
+        while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
         outb(PORT + REG_DATA, str[i]);
     }
 }

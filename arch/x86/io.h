@@ -32,6 +32,18 @@ static inline uint32_t inl(uint16_t port) {
     return ret;
 }
 
-static inline void iowait() {
+static inline void io_wait() {
     outb(0x80, 0);
+}
+
+static inline void halt() {
+    __asm__ volatile ("hlt" ::: "memory");
+}
+
+static inline void cli() {
+    __asm__ volatile ("cli" ::: "memory");
+}
+
+static inline void sti() {
+    __asm__ volatile ("sti" ::: "memory");
 }

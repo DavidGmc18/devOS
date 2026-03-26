@@ -2,34 +2,32 @@
 #include <driver/UART/UART.h>
 #include <driver/VGA/VGA.h>
 #include <printk.h>
+#include <arch/x86/io.h>
+#include <arch/x86/idt.h>
+#include <arch/x86/isr.h>
+#include <arch/x86/irq.h>
 
 void __attribute__((noreturn, section(".entry"))) entry() {
+    cli();
     UART_init();
     VGA_init();
+    IDT_init();
+    ISR_init();
+    IRQ_init();
+    sti();
 
     printk_sink_t sink_uart = {
         .name = "UART    ",
         .write = UART_log_write
     };
-    printk_sink_register(sink_uart);
-
     printk_sink_t sink_vga = {
         .name = "VGA     ",
         .write = VGA_log_write
     };
+
+    // Forward printk to serial and VGA
+    printk_sink_register(sink_uart);
     printk_sink_register(sink_vga);
 
-    printk(KERN_DEBUG "DEBUG\n");
-    printk(KERN_INFO "INFO\n");
-    printk(KERN_NOTICE "NOTICE\n");
-    printk(KERN_WARNING "WARNING\n");
-    printk(KERN_ERR "ERR\n");
-    printk(KERN_CRIT "CRIT\n");
-    printk(KERN_ALERT "ALERT\n");
-    printk(KERN_EMERG "EMERG\n");
-    printk("TEST\n");
-
-    printk("TEST%+10d\n", 1234);
-
-    while (1) __asm__ volatile ("hlt" ::: "memory");
+    while (1) halt();
 }

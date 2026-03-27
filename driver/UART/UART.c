@@ -16,25 +16,34 @@ static int uart_present = 0;
 
 int UART_init() {
     outb(PORT + REG_IER, 0x00); // Disable interrupts
+    io_wait();
     
     // Set Baud Rate
     outb(PORT + REG_LCR, 0x80); // Enable DLAB
+    io_wait();
     outb(PORT + 0, 0x03); // Divisor Low
+    io_wait();
     outb(PORT + 1, 0x00); // Divisor High
+    io_wait();
     
     // 8 bits, no parity, 1 stop bit
-    outb(PORT + REG_LCR, 0x03);    
+    outb(PORT + REG_LCR, 0x03);
+    io_wait();
     
     // Enable FIFO, clear them
-    outb(PORT + REG_FCR, 0xC7);    
+    outb(PORT + REG_FCR, 0xC7);
+    io_wait();
 
     // Loopback test
     outb(PORT + REG_MCR, 0x1E);
+    io_wait();
     outb(PORT + REG_DATA, 0xAE);
+    io_wait();
     
     if (inb(PORT + REG_DATA) == 0xAE) {
         uart_present = 1;
         outb(PORT + REG_MCR, 0x0F); // Normal mode
+        io_wait();
     } else uart_present = 0;
     return !uart_present;
 }
@@ -43,6 +52,7 @@ void UART_putc(char ch) {
     if (!uart_present) return;
     while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
     outb(PORT + REG_DATA, ch);
+    io_wait();
 }
 
 void UART_puts(const char* str) {
@@ -50,6 +60,7 @@ void UART_puts(const char* str) {
     while (*str) {
         while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
         outb(PORT + REG_DATA, *str++);
+        io_wait();
     }
 }
 
@@ -58,6 +69,7 @@ void UART_write(const char* str, unsigned long n) {
     for (unsigned long i = 0; i < n; i ++) {
         while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
         outb(PORT + REG_DATA, str[i]);
+        io_wait();
     }
 }
 
@@ -74,8 +86,17 @@ static const char* get_level_ansi(int level) {
 }
 
 void UART_log_write(int level, const char *str, unsigned long n) {
-    if (!uart_present) return;
+    if (!uart_present || !n) return;
+
     UART_puts(get_level_ansi(level));
-    UART_write(str, n);
-    UART_puts("\033[0m");
+
+    // Reset ANSI colors BEFORE the newline to prevent "color bleeding" into the 
+    // next line; we write the first n-1 chars, then the Reset code, then the \n.
+    UART_write(str, n-1);
+    if (str[n-1] == '\n') {
+        UART_puts("\033[0m\n");
+    } else {
+        UART_putc(str[n-1]);
+        UART_puts("\033[0m");
+    }
 }

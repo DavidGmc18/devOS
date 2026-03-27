@@ -1,5 +1,6 @@
 #include "idt.h"
 #include <string.h>
+#include <kernel/panic.h>
 
 typedef struct {
     uint16_t offset_low;
@@ -19,14 +20,18 @@ typedef struct {
 static IDT_Gate gates[256];
 static IDT_Descriptor descriptor = {sizeof(gates) - 1, gates};
 
-static void load_IDT(IDT_Descriptor* desc) {
-    __asm__ volatile ("lidt %0" :: "m"(*desc) : "memory");
+void IDT_init() {
+    memset(gates, 0, sizeof(gates));
+    __asm__ volatile ("lidt %0" :: "m"(descriptor) : "memory");
 }
 
-void IDT_set_gate(int interrupt, void* offset, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {
+void IDT_set_gate(uint8_t interrupt, void* offset, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {
+    if (!offset && p) panic("Attempted to set IDT %#X to NULL while enabled!\n", interrupt);
+    if (segment == 0x0 || segment % 8 != 0) panic("Attempted to set IDT %#X segment to %#X!\n", interrupt, segment);
+    
     gates[interrupt].offset_low = (uintptr_t)offset;
     gates[interrupt].segment = segment;
-    gates[interrupt].ist = 0;
+    gates[interrupt].ist = ist;
     gates[interrupt].zero = 0;
     gates[interrupt].type = type;
     gates[interrupt].dpl = dpl;
@@ -34,9 +39,4 @@ void IDT_set_gate(int interrupt, void* offset, uint16_t segment, uint8_t ist, ui
     gates[interrupt].offset_mid = ((uintptr_t)offset) >> 16;
     gates[interrupt].offset_high = ((uintptr_t)offset) >> 32;
     gates[interrupt].reserved = 0;
-}
-
-void IDT_init() {
-    memset(gates, 0, sizeof(gates));
-    load_IDT(&descriptor);
 }

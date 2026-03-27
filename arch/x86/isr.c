@@ -1,15 +1,17 @@
 #include "isr.h"
 #include "idt.h"
-#include <printk.h>
 #include "io.h"
+#include <kernel/panic.h>
 
 void __attribute__((interrupt)) no_handler(InterruptFrame *frame) {
-    printk(KERN_EMERG "Unhandled exception, KERNEL PANIC!\n");
+    if (!frame) panic("InterruptFrame* is NULL!\n");
+    panic("Unhandled exception!\n");
     while (1) halt();
 }
 
 void __attribute__((interrupt)) no_handler_err(InterruptFrame *frame, uint64_t error_code) {
-    printk(KERN_EMERG "Unhandled exception, KERNEL PANIC!\n");
+    if (!frame) panic("InterruptFrame* is NULL!\n");
+    panic("Unhandled exception!\n");
     while (1) halt();
 }
 

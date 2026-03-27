@@ -9,12 +9,13 @@
 
 void __attribute__((noreturn, section(".entry"))) entry() {
     cli();
-    UART_init();
-    VGA_init();
     IDT_init();
     ISR_init();
     IRQ_init();
     sti();
+
+    UART_init();
+    VGA_init();
 
     printk_sink_t sink_uart = {
         .name = "UART    ",

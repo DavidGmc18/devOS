@@ -14,9 +14,13 @@ unsigned char color = DEFAULT_COLOR;
 static void set_cursor(int x, int y) {
     short pos = y * WIDTH + x;
     outb(0x3D4, 0x0F);
+    io_wait();
     outb(0x3D5, (unsigned char)(pos & 0xFF));
+    io_wait();
     outb(0x3D4, 0x0E);
+    io_wait();
     outb(0x3D5, (unsigned char)((pos >> 8) & 0xFF));
+    io_wait();
     cx = x;
     cy = y;
 }
@@ -29,7 +33,9 @@ void VGA_init() {
 }
 
 static void putc(char ch, int x, int y) {
-    buffer[y*WIDTH+x] = (color << 8) | ch;
+    int position = y*WIDTH+x;
+    if (position < 0 || position > (WIDTH*HEIGHT)) return;
+    buffer[position] = (color << 8) | ch;
 }
 
 static void scroll(int y) {
@@ -100,7 +106,7 @@ void VGA_write(const char* str, unsigned long n) {
 
 static unsigned char get_level_color(int level) {
     static unsigned char colors[] = {0x40, 0x04, 0x0C, 0x0C, 0x0E, 0x0F};
-    if (level < 0 || level >= sizeof(colors)) 
+    if (level < 0 || level >= sizeof(colors) / sizeof(colors[0])) 
         return DEFAULT_COLOR;
     return colors[level];
 }

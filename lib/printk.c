@@ -16,6 +16,7 @@ typedef struct {
 static printk_sink_t sinks[MAX_SINKS];
 
 static void flush(PrintkBuffer* buffer) {
+    if (!buffer) return;
     if (!buffer->buffer_fill) return;
 
     for (int i = 0; i < MAX_SINKS; i++) {
@@ -27,29 +28,41 @@ static void flush(PrintkBuffer* buffer) {
 }
 
 static void putc(char ch, void* arg) {
+    if (!arg) return;
     PrintkBuffer* buffer = (PrintkBuffer*)arg;
-    buffer->buffer[buffer->buffer_fill++] = ch;
-    if (buffer->buffer_fill >= BUFFER_SIZE) {
+
+    if (buffer->buffer_fill >= BUFFER_SIZE)
         flush(buffer);
-        buffer->buffer_fill = 0;
-    }
+
+    buffer->buffer[buffer->buffer_fill++] = ch;
 }
 
 void vprintkl(int level, const char* format, va_list args) {
+    if (!format) return;
+
+    rflags_t rflags = get_rflags();
+    cli();
+
     PrintkBuffer buffer = {
         .buffer_fill=0,
         .level=level
     };
+
     vfctprintf(putc, &buffer, format, args);
     flush(&buffer);
+
+    if (rflags.intf) sti();
 }
 
 void vprintk(const char* format, va_list args) {
+    if (!format) return;
+
     int level = DEFAULT_LEVEL;
     if (format[0] == '\001' && format[1]) {
         level = format[1] - '0';
         format += 2;
     }
+
     vprintkl(level, format, args);
 }
 
@@ -77,6 +90,7 @@ printk_sink_t* printk_sink_register(printk_sink_t sink) {
             return sinks+i;
         }
     }
+
     return NULL;
 }
 

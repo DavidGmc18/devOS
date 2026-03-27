@@ -113,5 +113,10 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
 }
 #endif
 
+// ####################
+// # Added by Davidak #
+// ####################
+
+int vfctprintf(void (*out)(char character, void* arg), void* arg, const char* format, va_list args);
 
 #endif  // _PRINTF_H_

@@ -912,3 +912,18 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
   va_end(va);
   return ret;
 }
+
+// ####################
+// # Added by Davidak #
+// ####################
+
+#include <kernel/panic.h>
+
+void _putchar(char ch) {
+  panic("printf.c _putchar not implemented!\n");
+}
+
+int vfctprintf(void (*out)(char character, void* arg), void* arg, const char* format, va_list args) {
+  const out_fct_wrap_type out_fct_wrap = { out, arg };
+  return _vsnprintf(_out_fct, (char*)(uintptr_t)&out_fct_wrap, (size_t)-1, format, args);
+}

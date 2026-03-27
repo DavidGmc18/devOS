@@ -3,8 +3,12 @@
 #include <arch/x86/io.h>
 
 void __attribute__((noreturn)) vpanic(const char* format, va_list args) {
-    printkl(0, "KERNEL PANIC: ");
-    vprintkl(0, format, args);
+    if (format && *format) {
+        printkl(0, "KERNEL PANIC: ");
+        vprintkl(0, format, args);
+    } else {
+        printkl(0, "KERNEL PANIC!\n");
+    }
     cli();
     while (1) halt();
     __builtin_unreachable();

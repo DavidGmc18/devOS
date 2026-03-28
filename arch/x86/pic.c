@@ -1,6 +1,7 @@
 #include "pic.h"
 #include "io.h"
 #include <kernel/panic.h>
+#include <printk.h>
 
 #define PIC1_COMMAND 0x20
 #define PIC1_DATA 0x21
@@ -44,6 +45,8 @@ void PIC_remap(int offset1, int offset2) {
     io_wait();
     outb(PIC2_DATA, 0xFF);
     io_wait();
+
+    printk("[OK] PIC remapped\n");
 }
 
 void PIC_send_EOI(uint8_t irq) {

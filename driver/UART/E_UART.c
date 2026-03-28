@@ -1,4 +1,4 @@
-#include "UART.h"
+#include "E_UART.h"
 #include <arch/x86/io.h>
 
 #define PORT 0x3F8
@@ -14,7 +14,7 @@
 
 static int uart_present = 0;
 
-int UART_init() {
+int E_UART_init() {
     outb(PORT + REG_IER, 0x00); // Disable interrupts
     io_wait();
     
@@ -48,14 +48,14 @@ int UART_init() {
     return !uart_present;
 }
 
-void UART_putc(char ch) {
+void E_UART_putc(char ch) {
     if (!uart_present) return;
     while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
     outb(PORT + REG_DATA, ch);
     io_wait();
 }
 
-void UART_puts(const char* str) {
+void E_UART_puts(const char* str) {
     if (!uart_present) return;
     while (*str) {
         while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
@@ -64,7 +64,7 @@ void UART_puts(const char* str) {
     }
 }
 
-void UART_write(const char* str, unsigned long n) {
+void E_UART_write(const char* str, unsigned long n) {
     if (!uart_present) return;
     for (unsigned long i = 0; i < n; i ++) {
         while (!(inb(PORT + REG_LSR) & BSY)) io_wait();
@@ -85,18 +85,18 @@ static const char* get_level_ansi(int level) {
     }
 }
 
-void UART_log_write(int level, const char *str, unsigned long n) {
+void E_UART_log_write(int level, const char *str, unsigned long n) {
     if (!uart_present || !n) return;
 
-    UART_puts(get_level_ansi(level));
+    E_UART_puts(get_level_ansi(level));
 
     // Reset ANSI colors BEFORE the newline to prevent "color bleeding" into the 
     // next line; we write the first n-1 chars, then the Reset code, then the \n.
-    UART_write(str, n-1);
+    E_UART_write(str, n-1);
     if (str[n-1] == '\n') {
-        UART_puts("\033[0m\n");
+        E_UART_puts("\033[0m\n");
     } else {
-        UART_putc(str[n-1]);
-        UART_puts("\033[0m");
+        E_UART_putc(str[n-1]);
+        E_UART_puts("\033[0m");
     }
 }

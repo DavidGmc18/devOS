@@ -4,6 +4,7 @@
 #include <kernel/panic.h>
 #include "gdt.h"
 #include "tss.h"
+#include <printk.h>
 
 void __attribute__((interrupt)) no_handler(InterruptFrame *frame) {
     if (!frame) panic("InterruptFrame is NULL!\n");
@@ -44,4 +45,6 @@ void ISR_init() {
     IDT_set_gate(30, no_handler_err, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);
     IDT_set_gate(31, no_handler, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);
     for (int i = 32; i < 256; i++) IDT_set_gate(i, no_handler, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_INTERRUPT_GATE, 0, 1);
+
+    printk("[OK] ISR initialized\n");
 }

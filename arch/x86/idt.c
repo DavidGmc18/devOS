@@ -1,6 +1,7 @@
 #include "idt.h"
 #include <string.h>
 #include <kernel/panic.h>
+#include <printk.h>
 
 typedef struct {
     uint16_t offset_low;
@@ -28,6 +29,8 @@ void IDT_init() {
         :: "m"(descriptor)
         : "memory"
     );
+
+    printk("[OK] IDT initialized\n");
 }
 
 void IDT_set_gate(uint8_t interrupt, void* offset, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {

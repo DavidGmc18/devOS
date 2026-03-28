@@ -1,6 +1,7 @@
 #include "gdt.h"
 #include "tss.h"
 #include "GDT_MACROS.h"
+#include <printk.h>
 
 static gdt_entry_t gdt[] = {
     [GDT_NULL_SEGMENT/8] = {0},
@@ -27,7 +28,7 @@ static struct {
 } __attribute__((packed)) gdtr;
 
 void GDT_init() {
-    TSS_init(gdt + GDT_TSS_SEGMENT/8);
+    TSS_set(gdt + GDT_TSS_SEGMENT/8);
 
     gdtr.limit = sizeof(gdt) - 1;
     gdtr.base = (uint64_t)&gdt;
@@ -58,4 +59,6 @@ void GDT_init() {
         [tss_seg] "i"(GDT_TSS_SEGMENT)
         : "rax", "memory"
     );
+
+    printk("[OK] GDT and TSS initialized\n");
 }

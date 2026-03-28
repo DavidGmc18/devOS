@@ -6,4 +6,4 @@
 #define NO_IST 0
 #define EMERG_IST 1
 
-void TSS_init(gdt_entry_t* tss_gdt_entry);
+void TSS_set(gdt_entry_t* tss_gdt_entry);

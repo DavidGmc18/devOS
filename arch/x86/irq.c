@@ -4,6 +4,7 @@
 #include "isr.h"
 #include "io.h"
 #include "gdt.h"
+#include <printk.h>
 
 void __attribute__((interrupt)) timer_irq(InterruptFrame* frame) {
     if (!frame) panic("InterruptFrame* is NULL!\n");
@@ -28,4 +29,6 @@ void IRQ_init() {
 
     IRQ_set_gate(0, timer_irq, GDT_KERNEL_CODE_SEGMENT, 0, IDT_INTERRUPT_GATE, 0, 1);
     IRQ_set_gate(1, keyboard_irq, GDT_KERNEL_CODE_SEGMENT, 0, IDT_INTERRUPT_GATE, 0, 1);
+
+    printk("[OK] IRQ initialized\n");
 }

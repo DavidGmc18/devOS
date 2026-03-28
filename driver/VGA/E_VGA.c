@@ -1,4 +1,4 @@
-#include "VGA.h"
+#include "E_VGA.h"
 #include <arch/x86/io.h>
 
 #define WIDTH 80
@@ -27,7 +27,7 @@ static void set_cursor(int x, int y) {
     cy = y;
 }
 
-void VGA_init() {
+void E_VGA_init() {
     for (unsigned i = 0; i < WIDTH*HEIGHT; i++) {
         buffer[i] = DEFAULT_CHAR;
     }
@@ -73,7 +73,7 @@ static void scroll(int y) {
     set_cursor(cx, cy-y);
 }
 
-void VGA_putc(char ch) {
+void E_VGA_putc(char ch) {
     switch (ch) {
         case '\n':
             cx = 0;
@@ -104,9 +104,9 @@ void VGA_putc(char ch) {
     set_cursor(cx, cy);
 }
 
-void VGA_write(const char* str, unsigned long n) {
+void E_VGA_write(const char* str, unsigned long n) {
     for (unsigned long i = 0; i < n; i++) {
-        VGA_putc(str[i]);
+        E_VGA_putc(str[i]);
     }
 }
 
@@ -117,8 +117,8 @@ static unsigned char get_level_color(int level) {
     return colors[level];
 }
 
-void VGA_log_write(int level, const char *str, unsigned long n) {
+void E_VGA_log_write(int level, const char *str, unsigned long n) {
     color = get_level_color(level);
-    VGA_write(str, n);
+    E_VGA_write(str, n);
     color = DEFAULT_COLOR;
 }

@@ -15,7 +15,7 @@ void __attribute__((noreturn, section(".entry"))) entry() {
     E_VGA_init();
     printk_sink_register((printk_sink_t){.name = "UART    ", .write = E_UART_log_write});
     printk_sink_register((printk_sink_t){.name = "VGA     ", .write = E_VGA_log_write});
-    printk("[OK] Printk active\n");
+    printk("[OK] printk() active\n");
 
     GDT_init();
     IDT_init();

@@ -5,6 +5,7 @@
 #include "io.h"
 #include "gdt.h"
 #include <printk.h>
+#include "tss.h"
 
 void __attribute__((interrupt)) timer_irq(InterruptFrame* frame) {
     if (!frame) panic("InterruptFrame* is NULL!\n");
@@ -27,8 +28,8 @@ void IRQ_set_gate(uint8_t irq, void* offset, uint16_t segment, uint8_t ist, uint
 void IRQ_init() {
     PIC_remap(IRQ_TO_INTERRUPT_OFFSET, IRQ_TO_INTERRUPT_OFFSET+8);
 
-    IRQ_set_gate(0, timer_irq, GDT_KERNEL_CODE_SEGMENT, 0, IDT_INTERRUPT_GATE, 0, 1);
-    IRQ_set_gate(1, keyboard_irq, GDT_KERNEL_CODE_SEGMENT, 0, IDT_INTERRUPT_GATE, 0, 1);
+    IRQ_set_gate(0, timer_irq, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_INTERRUPT_GATE, 0, 1);
+    IRQ_set_gate(1, keyboard_irq, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_INTERRUPT_GATE, 0, 1);
 
     printk("[OK] IRQ initialized\n");
 }

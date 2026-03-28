@@ -7,7 +7,7 @@ typedef enum {
     GDT_KERNEL_CODE_SEGMENT = 0x08,
     GDT_KERNEL_DATA_SEGMENT = 0x10,
     GDT_TSS_SEGMENT = 0x18, // 16B
-} GDT_Segments;
+} gdt_segment_t;
 
 typedef struct {
     uint16_t limit_low;
@@ -18,4 +18,4 @@ typedef struct {
     uint8_t  base_high;
 } __attribute__((packed)) gdt_entry_t;
 
-void GDT_init();
+void gdt_init();

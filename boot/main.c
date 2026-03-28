@@ -20,11 +20,11 @@ void __attribute__((cdecl, noreturn, section(".entry"))) entry(BL_BootInfo* boot
     memset(&__bss_start, 0, (&__bss_end) - (&__bss_start));
 
 // Load kernel
-    FAT_init(boot_services->disk_read);
-    FAT_dev dev;
-    FAT_dev_init(&dev, &boot_info->disk);
+    fat_init(boot_services->disk_read);
+    fat_dev_t dev;
+    fat_dev_init(&dev, &boot_info->disk);
     void* kernel_addr = (void*)0x100000;
-    int err = FAT_read(&dev, "system/kernel.bin", kernel_addr);
+    int err = fat_read(&dev, "system/kernel.bin", kernel_addr);
     boot_services->printk("FAT_READ_ERR=%d\n", err);
 
 // Enter Long-mode & jump to kernel

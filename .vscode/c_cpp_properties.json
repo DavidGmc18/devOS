@@ -6,7 +6,8 @@
             "cStandard": "c99",
             "intelliSenseMode": "gcc-x86",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/deps/include"
             ],
             "defines": [
                 "__ELF__"

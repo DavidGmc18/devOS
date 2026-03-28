@@ -1,6 +1,6 @@
 #include <stdint.h>
-#include <driver/UART/E_UART.h>
-#include <driver/VGA/E_VGA.h>
+#include <driver/uart/early_uart.h>
+#include <driver/vga/early_vga.h>
 #include <printk.h>
 #include <arch/x86/io.h>
 #include <arch/x86/idt.h>
@@ -11,16 +11,16 @@
 void __attribute__((noreturn, section(".entry"))) entry() {
     cli();
 
-    E_UART_init();
-    E_VGA_init();
-    printk_sink_register((printk_sink_t){.name = "UART    ", .write = E_UART_log_write});
-    printk_sink_register((printk_sink_t){.name = "VGA     ", .write = E_VGA_log_write});
+    early_uart_init();
+    early_vga_init();
+    printk_sink_register((printk_sink_t){.name = "UART    ", .write = early_uart_log_write});
+    printk_sink_register((printk_sink_t){.name = "VGA     ", .write = early_vga_log_write});
     printk("[OK] printk() active\n");
 
-    GDT_init();
-    IDT_init();
-    ISR_init();
-    IRQ_init();
+    gdt_init();
+    idt_init();
+    isr_init();
+    irq_init();
     sti();
 
     while (1) halt();

@@ -10,12 +10,12 @@ typedef struct {
     char buffer[BUFFER_SIZE];
     size_t buffer_fill;
     int level;
-} PrintkBuffer;
+} printk_buffer_t;
 
 #define MAX_SINKS 8
 static printk_sink_t sinks[MAX_SINKS];
 
-static void flush(PrintkBuffer* buffer) {
+static void flush(printk_buffer_t* buffer) {
     if (!buffer) return;
     if (!buffer->buffer_fill) return;
 
@@ -29,7 +29,7 @@ static void flush(PrintkBuffer* buffer) {
 
 static void putc(char ch, void* arg) {
     if (!arg) return;
-    PrintkBuffer* buffer = (PrintkBuffer*)arg;
+    printk_buffer_t* buffer = (printk_buffer_t*)arg;
 
     if (buffer->buffer_fill >= BUFFER_SIZE)
         flush(buffer);
@@ -43,7 +43,7 @@ void vprintkl(int level, const char* format, va_list args) {
     rflags_t rflags = get_rflags();
     cli();
 
-    PrintkBuffer buffer = {
+    printk_buffer_t buffer = {
         .buffer_fill=0,
         .level=level
     };

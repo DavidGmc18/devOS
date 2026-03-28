@@ -14,10 +14,10 @@ typedef struct {
     uint32_t root_dir_cluster;
     uint32_t data;
     uint8_t sectors_per_cluster;
-} FAT_dev;
+} fat_dev_t;
 
-void FAT_init(BL_DiskRead disk_read_fn);
+void fat_init(BL_DiskRead disk_read_fn);
 
-int FAT_dev_init(FAT_dev* dev, BL_Disk* disk);
+int fat_dev_init(fat_dev_t* dev, BL_Disk* disk);
 
-int FAT_read(FAT_dev* dev, const char* path, void* buffer);
+int fat_read(fat_dev_t* dev, const char* path, void* buffer);

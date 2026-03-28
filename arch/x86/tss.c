@@ -19,7 +19,7 @@ static tss_t tss = {
 
 static uint8_t emergency_stack[4096] __attribute__((aligned(16)));
 
-void TSS_set(gdt_entry_t* tss_gdt_entry) {
+void tss_set(gdt_entry_t* tss_gdt_entry) {
     tss.ist[EMERG_IST-1] = (uint64_t)emergency_stack + sizeof(emergency_stack);
 
     tss_gdt_entry->limit_low = sizeof(tss_t) - 1;

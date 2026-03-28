@@ -32,37 +32,37 @@ typedef struct {
     uint32_t volume_id;
     char volume_label[11];
     char sys_id[8];
-} __attribute__((packed)) FAT_BPB;
+} __attribute__((packed)) fat_bpb_t;
 
 typedef struct {
     char oem_id[8];
-    FAT_BPB bpb;
-} __attribute__((packed)) FAT_Header;
+    fat_bpb_t bpb;
+} __attribute__((packed)) fat_header_t;
 
-__attribute__((section(".fat_header"), used, aligned(1))) FAT_Header fat_header;
-_Static_assert(sizeof(FAT_Header) == 87, "wrong size");
+__attribute__((section(".fat_header"), used, aligned(1))) fat_header_t fat_header;
+_Static_assert(sizeof(fat_header_t) == 87, "wrong size");
 
 static BL_DiskRead disk_read;
 
-void FAT_init(BL_DiskRead disk_read_fn) {
+void fat_init(BL_DiskRead disk_read_fn) {
     disk_read = disk_read_fn;
 }
 
-static int FAT_read_sectors(FAT_dev* dev, uint32_t lba, uint32_t count, uint16_t* buffer) {
+static int fat_read_sectors(fat_dev_t* dev, uint32_t lba, uint32_t count, uint16_t* buffer) {
     if (lba + count > dev->sectors) return -1;
     return disk_read(dev->abar, dev->port, (BL_LBA48){dev->lba + lba}, count, buffer);
 }
 
-int FAT_dev_init(FAT_dev* dev, BL_Disk* disk) {
+int fat_dev_init(fat_dev_t* dev, BL_Disk* disk) {
     dev->abar = disk->abar;
     dev->port = disk->port;
     dev->lba = disk->partition.lba;
     dev->sectors = disk->partition.sectors;
 
     uint16_t boot_sector[256];
-    if (FAT_read_sectors(dev, 0, 1, boot_sector)) return -1;
+    if (fat_read_sectors(dev, 0, 1, boot_sector)) return -1;
 
-    FAT_Header* header = (FAT_Header*)((uint8_t*)boot_sector + 3);
+    fat_header_t* header = (fat_header_t*)((uint8_t*)boot_sector + 3);
 
     dev->fat = header->bpb.reserved_sectors;
     dev->fat_sectors = header->bpb.fat_count * header->bpb.sectors_per_fat;
@@ -86,7 +86,7 @@ static struct {
     uint32_t entry[128];
 } fat_cache = {0};
 
-static bool FAT_cache_is_stale(FAT_dev* dev, uint32_t sector_no) {
+static bool fat_cache_is_stale(fat_dev_t* dev, uint32_t sector_no) {
     if (!fat_cache.valid)
         return true;
 
@@ -106,8 +106,8 @@ static bool FAT_cache_is_stale(FAT_dev* dev, uint32_t sector_no) {
 
 #define RET_ERR(func) do { int _err = (func); if (_err) return _err; } while(0)
 
-static int FAT_cache_fetch(FAT_dev* dev, uint32_t sector_no) {
-    RET_ERR(FAT_read_sectors(dev, dev->fat+sector_no, 1, (uint16_t*)fat_cache.entry));
+static int fat_cache_fetch(fat_dev_t* dev, uint32_t sector_no) {
+    RET_ERR(fat_read_sectors(dev, dev->fat+sector_no, 1, (uint16_t*)fat_cache.entry));
     fat_cache.valid = true;
     fat_cache.abar = dev->abar;
     fat_cache.port = dev->port;
@@ -118,12 +118,12 @@ static int FAT_cache_fetch(FAT_dev* dev, uint32_t sector_no) {
     return 0;
 }
 
-static int FAT_get_next_cluster(FAT_dev* dev, uint32_t current_cluster_no, uint32_t* next_cluster) {
+static int fat_get_next_cluster(fat_dev_t* dev, uint32_t current_cluster_no, uint32_t* next_cluster) {
     uint32_t sector_no = current_cluster_no / 128;
     uint32_t local_offset = current_cluster_no % 128;
 
-    if (FAT_cache_is_stale(dev, sector_no))
-        RET_ERR(FAT_cache_fetch(dev, sector_no));
+    if (fat_cache_is_stale(dev, sector_no))
+        RET_ERR(fat_cache_fetch(dev, sector_no));
 
     *next_cluster =  fat_cache.entry[local_offset];
     return 0;
@@ -145,13 +145,13 @@ typedef struct {
     uint16_t write_date;
     uint16_t cluster_low;
     uint32_t size;
-} __attribute__((packed)) FAT_DirEntry;
+} __attribute__((packed)) fat_dir_entry_t;
 
-#define FAT_DIR_ENTRIES_PER_SECTOR (512 / sizeof(FAT_DirEntry))
+#define FAT_DIR_ENTRIES_PER_SECTOR (512 / sizeof(fat_dir_entry_t))
 
 static uint16_t buffer[256];
 
-static int FAT_file_lookup(FAT_dev* dev, FAT_DirEntry* directory, const char* target, FAT_DirEntry* file) {
+static int fat_file_lookup(fat_dev_t* dev, fat_dir_entry_t* directory, const char* target, fat_dir_entry_t* file) {
     if (!(directory->attributes & FAT_ATTR_DIRECTORY)) return -1;
 
     uint32_t dir_cluster = directory->cluster_low | ((uint32_t)directory->cluster_high << 16);
@@ -160,8 +160,8 @@ static int FAT_file_lookup(FAT_dev* dev, FAT_DirEntry* directory, const char* ta
         uint32_t lba = dev->data + (dir_cluster - 2) * dev->sectors_per_cluster;
 
         for (int s = 0; s < dev->sectors_per_cluster; s++) {
-            RET_ERR(FAT_read_sectors(dev, lba+s, 1, buffer));
-            FAT_DirEntry* dir_entries = (FAT_DirEntry*)buffer;
+            RET_ERR(fat_read_sectors(dev, lba+s, 1, buffer));
+            fat_dir_entry_t* dir_entries = (fat_dir_entry_t*)buffer;
 
             for (int i = 0; i < FAT_DIR_ENTRIES_PER_SECTOR; i++) {
                 if (dir_entries[i].name[0] == 0x00) return -1; // last file
@@ -175,13 +175,13 @@ static int FAT_file_lookup(FAT_dev* dev, FAT_DirEntry* directory, const char* ta
             }
         }
 
-        RET_ERR(FAT_get_next_cluster(dev, dir_cluster, &dir_cluster));
+        RET_ERR(fat_get_next_cluster(dev, dir_cluster, &dir_cluster));
     }
 
     return -1;
 }
 
-static void FAT_short_name_to_name_ext(const char* short_name, char name_ext[11]) {
+static void fat_short_name_to_name_ext(const char* short_name, char name_ext[11]) {
     if (*short_name == '/') short_name++;
 
     int i = 0;
@@ -204,36 +204,36 @@ static void FAT_short_name_to_name_ext(const char* short_name, char name_ext[11]
     memset(name_ext+i, ' ', 11-i);
 }
 
-static int FAT_path_lookup(FAT_dev* dev, FAT_DirEntry* directory, const char* path, FAT_DirEntry* file) {
-    FAT_DirEntry current_entry = *directory;
+static int fat_path_lookup(fat_dev_t* dev, fat_dir_entry_t* directory, const char* path, fat_dir_entry_t* file) {
+    fat_dir_entry_t current_entry = *directory;
     while (path && *path) {
         char target[11];
-        FAT_short_name_to_name_ext(path, target);
+        fat_short_name_to_name_ext(path, target);
         path = strchr(path, '/');
         if (path) path++;
-        RET_ERR(FAT_file_lookup(dev, &current_entry, target, &current_entry));
+        RET_ERR(fat_file_lookup(dev, &current_entry, target, &current_entry));
     }
     *file = current_entry;
     return 0;
 }
 
-int FAT_read(FAT_dev* dev, const char* path, void* buffer) {
-    FAT_DirEntry root = {
+int fat_read(fat_dev_t* dev, const char* path, void* buffer) {
+    fat_dir_entry_t root = {
         .name = "ROOT    ",
         .ext = "   ",
         .attributes = FAT_ATTR_DIRECTORY,
         .cluster_high = (uint16_t)(dev->root_dir_cluster >> 16),
         .cluster_low = (uint16_t)(dev->root_dir_cluster & 0xFFFF)
     };
-    FAT_DirEntry file;
-    RET_ERR(FAT_path_lookup(dev, &root, path, &file));
+    fat_dir_entry_t file;
+    RET_ERR(fat_path_lookup(dev, &root, path, &file));
 
     uint32_t current_cluster = file.cluster_low | ((uint32_t)file.cluster_high << 16);
     while (current_cluster >= 2 && current_cluster < 0x0FFFFFF8) {
         uint32_t lba = dev->data + (current_cluster - 2) * dev->sectors_per_cluster;
-        RET_ERR(FAT_read_sectors(dev, lba, dev->sectors_per_cluster, buffer));
+        RET_ERR(fat_read_sectors(dev, lba, dev->sectors_per_cluster, buffer));
         buffer = (uint8_t*)buffer + dev->sectors_per_cluster * 512;
-        RET_ERR(FAT_get_next_cluster(dev, current_cluster, &current_cluster));
+        RET_ERR(fat_get_next_cluster(dev, current_cluster, &current_cluster));
     }
     return 0;
 }

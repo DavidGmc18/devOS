@@ -8,6 +8,6 @@ typedef struct {
     uint64_t flags;
     uint64_t sp;
     uint64_t ss;
-} InterruptFrame;
+} interrupt_frame_t;
 
-void ISR_init();
+void isr_init();

@@ -27,8 +27,8 @@ static struct {
     uint64_t base;
 } __attribute__((packed)) gdtr;
 
-void GDT_init() {
-    TSS_set(gdt + GDT_TSS_SEGMENT/8);
+void gdt_init() {
+    tss_set(gdt + GDT_TSS_SEGMENT/8);
 
     gdtr.limit = sizeof(gdt) - 1;
     gdtr.base = (uint64_t)&gdt;

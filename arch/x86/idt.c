@@ -11,16 +11,16 @@ typedef struct {
     uint16_t offset_mid;
     uint32_t offset_high;
     uint32_t reserved;
-} __attribute__((packed)) IDT_Gate;
+} __attribute__((packed)) idt_gate_t;
 
-static IDT_Gate gates[256] = {0};
+static idt_gate_t gates[256] = {0};
 
 static struct {
     uint16_t size;
     uint64_t base;
 } __attribute__((packed)) descriptor;
 
-void IDT_init() {
+void idt_init() {
     descriptor.size = sizeof(gates) - 1;
     descriptor.base = (uint64_t)&gates;
 
@@ -33,7 +33,7 @@ void IDT_init() {
     printk("[OK] IDT initialized\n");
 }
 
-void IDT_set_gate(uint8_t interrupt, void* offset, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {
+void idt_set_gate(uint8_t interrupt, void* offset, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {
     if (!offset && p) panic("Attempted to set IDT %#X to NULL while enabled!\n", interrupt);
     if (segment == 0x0 || segment % 8 != 0) panic("Attempted to set IDT %#X segment to %#X!\n", interrupt, segment);
     

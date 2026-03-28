@@ -12,17 +12,22 @@ typedef struct {
     uint32_t reserved;
 } __attribute__((packed)) IDT_Gate;
 
-typedef struct {
-    uint16_t size;
-    IDT_Gate* base;
-} __attribute__((packed)) IDT_Descriptor;
+static IDT_Gate gates[256] = {0};
 
-static IDT_Gate gates[256];
-static IDT_Descriptor descriptor = {sizeof(gates) - 1, gates};
+static struct {
+    uint16_t size;
+    uint64_t base;
+} __attribute__((packed)) descriptor;
 
 void IDT_init() {
-    memset(gates, 0, sizeof(gates));
-    __asm__ volatile ("lidt %0" :: "m"(descriptor) : "memory");
+    descriptor.size = sizeof(gates) - 1;
+    descriptor.base = (uint64_t)&gates;
+
+    __asm__ volatile (
+        "lidt %0"
+        :: "m"(descriptor)
+        : "memory"
+    );
 }
 
 void IDT_set_gate(uint8_t interrupt, void* offset, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {

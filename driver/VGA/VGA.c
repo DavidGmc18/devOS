@@ -4,6 +4,8 @@
 #define WIDTH 80
 #define HEIGHT 25
 
+#define TAB_WIDTH 4
+
 volatile unsigned short* buffer = (unsigned short*)0xB8000;
 static int cx, cy;
 
@@ -80,6 +82,10 @@ void VGA_putc(char ch) {
 
         case '\r':
             cx = 0;
+            break;
+
+        case '\t':
+            cx += (TAB_WIDTH - (cx % TAB_WIDTH));
             break;
 
         default:

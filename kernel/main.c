@@ -6,9 +6,11 @@
 #include <arch/x86/idt.h>
 #include <arch/x86/isr.h>
 #include <arch/x86/irq.h>
+#include <arch/x86/gdt.h>
 
 void __attribute__((noreturn, section(".entry"))) entry() {
     cli();
+    GDT_init();
     IDT_init();
     ISR_init();
     IRQ_init();

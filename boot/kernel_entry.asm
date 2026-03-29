@@ -17,6 +17,9 @@ kernel64_entry:
     mov eax, [esp+8]
     mov [kernel_addr], eax
 
+    mov eax, [esp+12]
+    mov [kernel_addr+4], eax
+
 ;   Paging
     mov eax, [pml4_addr]
     mov cr3, eax
@@ -58,7 +61,7 @@ long_mode:
 
 section .data
 pml4_addr: dd 0
-kernel_addr: dd 0
+kernel_addr: dq 0
 
 GDT_USER_SEG equ 1<<44
 GDT_PRESENT equ 1<<47

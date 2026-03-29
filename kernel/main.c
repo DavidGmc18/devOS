@@ -23,5 +23,7 @@ void __attribute__((noreturn, section(".entry"))) entry() {
     irq_init();
     sti();
 
+    printk("Kernel running at %#p\n", entry);
+
     while (1) halt();
 }

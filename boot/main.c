@@ -1,46 +1,41 @@
 #include <bl/boot.h>
 #include <string.h>
 #include "fat.h"
+#include "vmm.h"
 
-// TODO test FAT
+#define KERN_PHYS 0x200000
+#define KERN_VIRT 0xFFFFFFFF80000000
+static const char* KERNEL_FILE = "system/kernel.bin";
 
 extern uint8_t __bss_start;
 extern uint8_t __bss_end;
 
-#define PT_PRESENT 1
-#define PT_WRITABLE 2
-#define PAGE_PSE (1 << 7)
-__attribute__((aligned(4096))) uint64_t pml4[512];
-__attribute__((aligned(4096))) uint64_t pdpt_l[512];
-__attribute__((aligned(4096))) uint64_t pdpt_h[512];
-__attribute__((aligned(4096))) uint64_t pd_l[512];
-__attribute__((aligned(4096))) uint64_t pd_h[512];
-
-extern void kernel64_entry(void* pml4_addr, uint64_t kernel_addr);
+extern void kernel64_entry(void* pml4_addr, uint64_t kernel_virt);
 
 void __attribute__((cdecl, noreturn, section(".entry"))) entry(BL_BootInfo* boot_info, BL_BootServices* boot_services) {
     memset(&__bss_start, 0, (&__bss_end) - (&__bss_start));
 
-// Load kernel
-    fat_init(boot_services->disk_read);
     fat_dev_t dev;
-    fat_dev_init(&dev, &boot_info->disk);
-    void* kernel_addr = (void*)0x200000;
-    int err = fat_read(&dev, "system/kernel.bin", kernel_addr);
-    boot_services->printk("FAT_READ_ERR=%d\n", err);
+    fat_init(boot_services->disk_read);
+    if (fat_dev_init(&dev, &boot_info->disk)) {
+        boot_services->printk("Falied to initialize FAT for boot volume\n");
+        goto end;
+    }
 
-// Enter Long-mode & jump to kernel
-    // 0x000000 - 0x200000 => 0x000000 - 0x200000
-    pml4[0] = (uint64_t)(uintptr_t)pdpt_l | PT_PRESENT | PT_WRITABLE;
-    pdpt_l[0] = (uint64_t)(uintptr_t)pd_l | PT_PRESENT | PT_WRITABLE;
-    pd_l[0] = (uint64_t)0x0 | PT_PRESENT | PT_WRITABLE | PAGE_PSE;
+    if (fat_read(&dev, KERNEL_FILE, (void*)KERN_PHYS)) {
+        boot_services->printk("Falied to read '%s'\n", KERNEL_FILE);
+        goto end;
+    }
 
-    // 0x200000 - 0x400000 => 0xFFFFFFFF80000000 - 0xFFFFFFFF82000000
-    pml4[511] = (uint64_t)(uintptr_t)pdpt_h | PT_PRESENT | PT_WRITABLE;
-    pdpt_h[510] = (uint64_t)(uintptr_t)pd_h | PT_PRESENT | PT_WRITABLE;
-    pd_h[0] = (uint64_t)(uintptr_t)kernel_addr | PT_PRESENT | PT_WRITABLE | PAGE_PSE;
+    if (vmm_init(KERN_PHYS, KERN_VIRT)) {
+        boot_services->printk("Falied to initialize VMM\n");
+        goto end;
+    }
 
-    kernel64_entry(pml4, 0xFFFFFFFF80000000);
+    kernel64_entry(vmm_get_pml4(), KERN_VIRT);
 
+end:
+    boot_services->printk("Power-off your computer");
     while (1) __asm__ volatile ("hlt" ::: "memory");
+    __builtin_unreachable();
 }

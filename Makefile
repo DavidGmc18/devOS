@@ -6,14 +6,12 @@ all: deps disk_image
 #
 # Dependencies
 #
-deps: deps_dir $(BOOTLOADER_BIN)
+deps: deps_dir $(BOOTLOADER_BIN) $(STB_SPRINTF_H)
 
 $(BOOTLOADER_BIN):
-	@wget -O $@ $(BOOTLOADER_GIT)/releases/download/$(BOOTLOADER_VERSION)/BootLoader-MBR-i686.bin
-	@git clone --depth=1 --filter=blob:none --sparse --branch $(BOOTLOADER_VERSION) $(BOOTLOADER_GIT) $(DEPS_DIR)/tmp/bootloader
-	@cd $(DEPS_DIR)/tmp/bootloader && git sparse-checkout set include
-	@cp -r $(DEPS_DIR)/tmp/bootloader/include/* $(DEPS_INCLUDE)/
-	@rm -rf $(DEPS_DIR)/tmp/bootloader
+	@mkdir -p $(DEPS_INCLUDE)
+	@wget -qO $@ $(BOOTLOADER_GIT)/releases/download/$(BOOTLOADER_VERSION)/BootLoader-MBR-i686.bin
+	@wget -qO- $(BOOTLOADER_GIT)/archive/refs/tags/$(BOOTLOADER_VERSION).tar.gz | tar -xz -C $(DEPS_INCLUDE) --strip-components=2 --wildcards "*/include/*"
 
 #
 # Disk Image

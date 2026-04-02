@@ -11,11 +11,11 @@
 #define KERN_INFO    "\001" "6"
 #define KERN_DEBUG   "\001" "7"
 
-void vprintkl(int level, const char* format, va_list args);
-void vprintk(const char* format, va_list args);
+int vprintkl(int level, const char* format, va_list args);
+int vprintk(const char* format, va_list args);
 
-void printkl(int level, const char* format, ...);
-void printk(const char* format, ...);
+int printkl(int level, const char* format, ...);
+int printk(const char* format, ...);
 
 typedef struct {
     char name[8]; // name[0] = 0 -> sink not present; name[0] != 0 => sink present

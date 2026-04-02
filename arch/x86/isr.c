@@ -6,12 +6,12 @@
 #include "tss.h"
 #include <printk.h>
 
-void __attribute__((interrupt)) no_handler(interrupt_frame_t *frame) {
+void __attribute__((interrupt, target("general-regs-only"))) no_handler(interrupt_frame_t *frame) {
     if (!frame) panic("Interrupt frame is NULL!\n");
     panic("Unhandled exception!\n");
 }
 
-void __attribute__((interrupt)) no_handler_err(interrupt_frame_t *frame, uint64_t error_code) {
+void __attribute__((interrupt, target("general-regs-only"))) no_handler_err(interrupt_frame_t *frame, uint64_t error_code) {
     if (!frame) panic("Interrupt frame is NULL!\n");
     panic("Unhandled exception!\n");
 }

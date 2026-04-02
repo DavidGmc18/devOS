@@ -7,12 +7,12 @@
 #include <printk.h>
 #include "tss.h"
 
-void __attribute__((interrupt)) timer_irq(interrupt_frame_t* frame) {
+void __attribute__((interrupt, target("general-regs-only"))) timer_irq(interrupt_frame_t* frame) {
     if (!frame) panic("Interrupt frame is NULL!\n");
     pic_send_EOI(0);
 }
 
-void __attribute__((interrupt)) keyboard_irq(interrupt_frame_t* frame) {
+void __attribute__((interrupt, target("general-regs-only"))) keyboard_irq(interrupt_frame_t* frame) {
     if (!frame) panic("Interrupt frame is NULL!\n");
     uint8_t scancode = inb(0x60);
     pic_send_EOI(1);

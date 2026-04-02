@@ -7,6 +7,7 @@
 #include <arch/x86/irq.h>
 #include <arch/x86/gdt.h>
 #include <string.h>
+#include <arch/x86/bootmem.h>
 
 extern uint8_t __bss_start;
 extern uint8_t __bss_end;
@@ -26,6 +27,7 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     idt_init();
     isr_init();
     irq_init();
+    bootmem_init(e820_table);
     sti();
 
     while (1) halt();

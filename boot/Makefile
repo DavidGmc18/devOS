@@ -1,4 +1,5 @@
-HEADERS_C = $(shell find . -type f -name "*.h")
+# HEADERS_C = $(shell find . -type f -name "*.h")
+HEADERS_C = $(shell find $(SUB_SYSTEMS) -type f -name "*.h")
 SOURCES_C = $(shell find . -type f -name "*.c")
 OBJECTS_C = $(patsubst %.c, $(BUILD_DIR)/boot/c/%.o, $(SOURCES_C))
 
@@ -19,7 +20,7 @@ $(BOOT_BIN): $(OBJECTS_ASM) $(OBJECTS_C)
 
 $(BUILD_DIR)/boot/c/%.o: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
-	@i686-elf-gcc -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(DEPS_INCLUDE) -c -o $@ $<
+	@i686-elf-gcc -g -O2 -DDEBUG -ffreestanding -nostdlib -I. -I$(SOURCE_DIR) -I$(DEPS_INCLUDE) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIR)/boot/asm/%.o: %.asm $(HEADERS_ASM)

@@ -9,7 +9,7 @@ EFER_LM_ENABLE equ 1 << 8
 CR0_PM_ENABLE equ 1 << 0
 CR0_PG_ENABLE equ 1 << 31
 
-; extern void kernel64_entry(void* pml4_addr, uint64_t kernel_virt);
+; extern void kernel64_entry(void* pml4_addr, uint64_t kernel_virt, struct e820_table* e820_table_ptr);
 section .text
 kernel64_entry:
     mov eax, [esp+4]
@@ -20,6 +20,10 @@ kernel64_entry:
 
     mov eax, [esp+12]
     mov [kernel_virt+4], eax
+
+    mov eax, [esp+16]
+    mov [e820_table_ptr], eax
+    mov dword [e820_table_ptr + 4], 0
 
 ;   Paging
     mov eax, [pml4_addr]
@@ -56,6 +60,7 @@ long_mode:
     
     mov rsp, 0x200000 ; TODO organize stack
 
+    mov rdi, [rel e820_table_ptr]
     jmp [kernel_virt]
     hlt
 
@@ -63,6 +68,7 @@ long_mode:
 section .data
 pml4_addr: dd 0
 kernel_virt: dq 0
+e820_table_ptr: dq 0
 
 GDT_USER_SEG equ 1<<44
 GDT_PRESENT equ 1<<47

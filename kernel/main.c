@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <driver/uart/early_uart.h>
 #include <driver/vga/early_vga.h>
 #include <printk.h>
@@ -7,9 +6,14 @@
 #include <arch/x86/isr.h>
 #include <arch/x86/irq.h>
 #include <arch/x86/gdt.h>
+#include <string.h>
+
+extern uint8_t __bss_start;
+extern uint8_t __bss_end;
 
 void __attribute__((noreturn, section(".entry"))) entry() {
     cli();
+    memset(&__bss_start, 0, (&__bss_end) - (&__bss_start));
 
     early_uart_init();
     early_vga_init();
@@ -21,9 +25,9 @@ void __attribute__((noreturn, section(".entry"))) entry() {
     idt_init();
     isr_init();
     irq_init();
+    
     sti();
-
-    printk("Kernel running at %#p\n", entry);
+    printk("Kernel loaded at %#p\n", entry);
 
     while (1) halt();
 }

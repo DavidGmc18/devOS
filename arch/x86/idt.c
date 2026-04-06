@@ -1,6 +1,6 @@
 #include "idt.h"
 #include <string.h>
-#include <kernel/panic.h>
+#include <panic.h>
 #include <printk.h>
 
 typedef struct {

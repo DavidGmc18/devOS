@@ -1,4 +1,4 @@
-#include "panic.h"
+#include <panic.h>
 #include <printk.h>
 #include <arch/x86/io.h>
 

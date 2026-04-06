@@ -1,7 +1,7 @@
 #include "isr.h"
 #include "idt.h"
 #include "io.h"
-#include <kernel/panic.h>
+#include <panic.h>
 #include "gdt.h"
 #include "tss.h"
 #include <printk.h>

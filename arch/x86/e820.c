@@ -1,6 +1,8 @@
 #include "e820.h"
 #include "stddef.h"
 #include <string.h>
+#include <printk.h>
+#include <panic.h>
 
 #define E820_MAX_ENTRIES 256
 
@@ -123,5 +125,9 @@ static int e820_sanitize(struct e820_table* table) {
  */
 
 void e820_init(struct e820_table* table) {
-    e820_sanitize(table);
+    if (e820_sanitize(table)) {
+        panic("Failed to sanitize E820 memory map!\n");
+    }
+
+    printk("[OK] E820 sanitized\n");
 }

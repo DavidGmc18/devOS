@@ -17,5 +17,5 @@ $(KERNEL_BIN): $(OBJECTS_ASM) $(OBJECTS_C)
 
 $(BUILD_DIR)/c/%.o: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
-	@x86_64-elf-gcc -g -O2 -DDEBUG -ffreestanding -mgeneral-regs-only -mcmodel=kernel -fno-pic -fno-pie -nostdlib -mno-red-zone -fstack-usage -I. -I$(SOURCE_DIR) -I$(LIB_DIR) -I$(DEPS_INCLUDE) -c -o $@ $<
+	@x86_64-elf-gcc -g -O2 -DDEBUG -ffreestanding -mgeneral-regs-only -mcmodel=kernel -fno-pic -fno-pie -nostdlib -mno-red-zone -fstack-usage -I. -I$(SOURCE_DIR) -I$(INCLUDE_DIR) -I$(DEPS_INCLUDE) -c -o $@ $<
 	@echo "--> Compiled: " $<

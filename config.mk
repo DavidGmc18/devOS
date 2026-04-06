@@ -4,6 +4,7 @@ export DEPS_DIR = $(abspath deps)
 export DEPS_BIN = $(DEPS_DIR)/bin
 export DEPS_INCLUDE = $(DEPS_DIR)/include
 export LIB_DIR = $(abspath lib)
+export INCLUDE_DIR = $(abspath include)
 
 #
 # Config

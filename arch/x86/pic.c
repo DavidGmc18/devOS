@@ -1,6 +1,6 @@
 #include "pic.h"
 #include "io.h"
-#include <kernel/panic.h>
+#include <panic.h>
 #include <printk.h>
 
 #define PIC1_COMMAND 0x20

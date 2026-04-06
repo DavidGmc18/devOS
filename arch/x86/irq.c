@@ -1,6 +1,6 @@
 #include "pic.h"
 #include "idt.h"
-#include <kernel/panic.h>
+#include <panic.h>
 #include "isr.h"
 #include "io.h"
 #include "gdt.h"

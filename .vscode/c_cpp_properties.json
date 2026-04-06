@@ -4,7 +4,7 @@
             "name": "x86_64-elf-gcc",
             "compilerPath": "/usr/local/bin/x86_64-elf-gcc",
             "cStandard": "c99",
-            "intelliSenseMode": "gcc-x86",
+            "intelliSenseMode": "gcc-x64",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/deps/include"

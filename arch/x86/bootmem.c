@@ -1,79 +1,68 @@
 #include "bootmem.h"
 #include <stddef.h>
 #include <printk.h>
-#include <kernel/panic.h>
+#include <panic.h>
 
 extern char KERNEL_PHYS[];
 extern char __kernel_vma_start[];
 extern char __kernel_vma_end[];
 
 #define PAGE_SIZE 4096
-#define KERNEL_START (uintptr_t)KERNEL_PHYS
+#define KERNEL_BASE (uintptr_t)KERNEL_PHYS
 #define KERNEL_SIZE ((uintptr_t)__kernel_vma_end - (uintptr_t)__kernel_vma_start)
+#define KERNEL_END (KERNEL_BASE + KERNEL_SIZE)
 
-#define PALLIGN(addr) (((addr) + PAGE_SIZE -1) & ~(PAGE_SIZE-1)) // Allign to next page start
+// TODO, move to math.h? and make it better
+#define ROUND_DOWN(a, b) ((a / b) * b)
+#define ROUND_UP(a, b) (((a + b - 1) / b) * b)
 
-static struct e820_table* e820_table;
-static void* next_addr;
-static void* last_phys;
+static void* alloc_base;
+static void* alloc_end;
+static void* alloc_ptr;
 
 int bootmem_init(struct e820_table* e820_table_ptr) {
-    e820_table = e820_table_ptr;
-    next_addr = (void*)PALLIGN(KERNEL_START + KERNEL_SIZE);
+    alloc_base = NULL;
+    alloc_end = NULL;
+    alloc_ptr = NULL;
 
-    last_phys = 0;
-    for (int i = 0; i < e820_table->entries_count; i++) {
-        struct e820_entry* entry = e820_table->entries+i;
-        if (entry->type != E820_TYPE_RAM) continue;
-        uintptr_t end = entry->addr + entry->size;
-        if (end > (uintptr_t)last_phys) last_phys = (void*)end;
+    struct e820_entry* entries = e820_table_ptr->entries;
+    uint64_t last_address = entries[e820_table_ptr->entries_count-1].addr + entries[e820_table_ptr->entries_count-1].size;
+    uint64_t min_size = ((last_address + 0x1FFFFF) / 0x200000) * 0x1000; // Calculated for HHDM mapping
+
+    for (int i = 0; i < e820_table_ptr->entries_count; i++) {
+        if (entries[i].type != E820_TYPE_RAM) continue;
+
+        uintptr_t entry_end = entries[i].addr + entries[i].size;
+        entry_end = ROUND_DOWN(entry_end, PAGE_SIZE);
+        if (entry_end <= KERNEL_END) continue;
+
+        uintptr_t entry_base = (entries[i].addr >= KERNEL_END) ? entries[i].addr : KERNEL_END;
+        entry_base = ROUND_UP(entry_base, PAGE_SIZE);
+        if (entry_base >= entry_end) continue;
+
+        uint64_t size = entry_end - entry_base;
+        if (size <= alloc_end - alloc_base) continue;
+
+        alloc_base = (void*)entry_base;
+        alloc_end = (void*)entry_end;
+        if (size >= min_size) break;
     }
 
-    if (!last_phys) {
+    if (!alloc_base || !alloc_end || alloc_end <= alloc_base) {
         panic("Bootmem init failed: No usable RAM found in E820 table!\n");
         return -1;
     }
 
-    printk("[OK] Bootmem initialized. Range: 0x%p - 0x%p\n", next_addr, last_phys);
+    alloc_ptr = alloc_base;
+
+    printk("[OK] Bootmem initialized\n");
     return 0;
 }
 
-void* bootmem_alloc(int count) {
-    uint64_t size = (uint64_t)count * PAGE_SIZE;
-    uintptr_t start = PALLIGN((uintptr_t)next_addr);
-    uintptr_t end = PALLIGN(start + size);
-
-    while (end <= (uintptr_t)last_phys) {
-        int is_ram = 0;
-        int collision = 0; 
-        end = PALLIGN(start + size);
-
-        uintptr_t next_ram_block = UINTPTR_MAX;
-
-        for (int i = 0; i < e820_table->entries_count; i++) {
-            struct e820_entry* entry = e820_table->entries+i;
-
-            if (entry->type == E820_TYPE_RAM) {
-                if (!is_ram && start >= entry->addr && end <= entry->addr + entry->size) is_ram = 1;
-                if (!is_ram && entry->addr > start && entry->addr < next_ram_block) {
-                    next_ram_block = entry->addr;
-                }
-            } else if (start < entry->addr + entry->size && entry->addr < end) {
-                start = PALLIGN(entry->addr + entry->size);
-                collision = 1;
-                break;
-            }
-        }
-
-        if (collision) continue;
-
-        if (is_ram && !collision) {
-            next_addr = (void*)PALLIGN(start + size);
-            return (void*)start;
-        }
-
-        if (next_ram_block != UINTPTR_MAX) start = PALLIGN(next_ram_block); else break;
-    }
-    
-    return NULL;
+void* bootmem_alloc(int bytes) {
+    if ((uintptr_t)alloc_ptr < (uintptr_t)alloc_base) panic("Bootmem encountered unexpected state!\n");
+    uintptr_t allocation = ROUND_UP((uintptr_t)alloc_ptr, PAGE_SIZE);
+    if (allocation + bytes > (uintptr_t)alloc_end) return NULL;
+    alloc_ptr = (void*)(allocation + bytes);
+    return (void*)allocation;
 }

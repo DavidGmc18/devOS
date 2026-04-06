@@ -4,15 +4,10 @@
 #define FILL_MULTIPLIER ((uintptr_t)(-1ULL / 0xFF))
 
 void* memset(void* ptr, int value, size_t num) {
-    uintptr_t fill = (uint8_t)value * FILL_MULTIPLIER;
-    size_t words = num / sizeof(uintptr_t);
-
-    uintptr_t* native_ptr = ptr;
-    for (size_t i = 0; i < words; i++)
-        native_ptr[i] = fill;
+    if (!ptr) return NULL;
 
     uint8_t* byte_ptr = ptr;
-    for (size_t i = words * sizeof(uintptr_t); i < num; i++)
+    for (size_t i = 0; i < num; i++)
         byte_ptr[i] = value;
 
     return ptr;
@@ -30,4 +25,17 @@ size_t wcslen(const wchar_t *s) {
     const wchar_t *p = s;
     while (*p) p++;
     return (size_t)(p - s);
+}
+
+void* memcpy(void* dest, const void* src, size_t count) {
+    if (!dest) return NULL;
+    if (!src) return NULL;
+    
+    uint8_t* byte_dest = dest;
+    const uint8_t* byte_src = src;
+    for (size_t i = 0; i < count; i++) {
+        byte_dest[i] = byte_src[i];
+    }
+
+    return dest;
 }

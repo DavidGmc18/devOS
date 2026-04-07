@@ -1,6 +1,4 @@
 #pragma once
 
-#include "e820.h"
-
-int bootmem_init(struct e820_table* e820_table_ptr);
+int bootmem_init();
 void* bootmem_alloc(int bytes);

@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 enum e820_type {
-	E820_TYPE_UNDEFINED = 0,
 	E820_TYPE_RAM = 1,
 	E820_TYPE_RESERVED = 2,
 	E820_TYPE_ACPI = 3,
@@ -28,3 +27,5 @@ struct e820_table {
 } __attribute__((packed));
 
 void e820_init(struct e820_table* table);
+
+struct e820_table* e820_get_table();

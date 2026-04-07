@@ -6,7 +6,7 @@
 
 #define TAB_WIDTH 4
 
-volatile unsigned short* buffer = (unsigned short*)0xB8000;
+volatile unsigned short* buffer;
 static int cx, cy;
 
 #define DEFAULT_COLOR 0x07
@@ -27,7 +27,11 @@ static void set_cursor(int x, int y) {
     cy = y;
 }
 
-void early_vga_init() {
+void early_vga_init(unsigned char* vbuf) {
+    buffer = (volatile unsigned short*)vbuf;
+}
+
+void early_vga_clrscr() {
     for (unsigned i = 0; i < WIDTH*HEIGHT; i++) {
         buffer[i] = DEFAULT_CHAR;
     }

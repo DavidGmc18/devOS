@@ -23,7 +23,7 @@ struct change_point {
 };
 
 static struct change_point change_points[2*E820_MAX_ENTRIES];
-static struct e820_entry new_entries[E820_MAX_ENTRIES];
+// static struct e820_entry new_entries[E820_MAX_ENTRIES];
 static struct e820_entry *overlap_list[E820_MAX_ENTRIES];
 
 static inline int change_point_cmp(const struct change_point* a, const struct change_point* b) {
@@ -32,7 +32,7 @@ static inline int change_point_cmp(const struct change_point* a, const struct ch
     return (a->addr != a->entry->addr) - (b->addr != b->entry->addr);
 }
 
-static int e820_sanitize(struct e820_table* table) {
+static int e820_sanitize(struct e820_table* table, struct e820_table* new_table) {
     struct e820_entry *entries = table->entries;
 
     if (table->entries_count < 2)
@@ -67,7 +67,6 @@ static int e820_sanitize(struct e820_table* table) {
     }
 
     int overlap_entries = 0;	 /* Number of entries in the overlap table */
-	int new_nr_entries = 0;	 /* Index for creating new map entries */
 	int last_type = 0;		 /* Start with undefined memory type */
 	uint64_t last_addr = 0;		 /* Start with 0 as last starting address */
     for (int chg_idx = 0; chg_idx < change_count; chg_idx++) {
@@ -98,24 +97,28 @@ static int e820_sanitize(struct e820_table* table) {
 		/* Continue building up new map based on this information: */
 		if (current_type != last_type) {
 			if (last_type) {
-				new_entries[new_nr_entries].size = change_points[chg_idx].addr - last_addr;
+				new_table->entries[new_table->entries_count].size = change_points[chg_idx].addr - last_addr;
 				/* Move forward only if the new size was non-zero: */
-				if (new_entries[new_nr_entries].size != 0)
+				if (new_table->entries[new_table->entries_count].size != 0)
 					/* No more space left for new entries? */
-					if (++new_nr_entries >= E820_MAX_ENTRIES)
+					if (++new_table->entries_count >= E820_MAX_ENTRIES)
 						break;
 			}
 			if (current_type) {
-				new_entries[new_nr_entries].addr = change_points[chg_idx].addr;
-				new_entries[new_nr_entries].type = current_type;
+				new_table->entries[new_table->entries_count].addr = change_points[chg_idx].addr;
+				new_table->entries[new_table->entries_count].type = current_type;
 				last_addr = change_points[chg_idx].addr;
 			}
 			last_type = current_type;
 		}
     }
 
-    memcpy(table->entries, new_entries, new_nr_entries * sizeof(struct e820_entry));
-    table->entries_count = new_nr_entries;
+    for (int i = 0; i < new_table->entries_count; i++) {
+        if (new_table->entries[i].addr % 0x1000 || new_table->entries[i].size % 0x1000) {
+            printk(KERN_WARNING "[WARN] Unaligned E820 entry: base=%#llx size=%#llx\n", new_table->entries[i].addr, new_table->entries[i].size); 
+        }
+    }
+
     return 0;
 }
 
@@ -125,9 +128,15 @@ static int e820_sanitize(struct e820_table* table) {
  */
 
 void e820_init(struct e820_table* table) {
-    if (e820_sanitize(table)) {
+    e820_table.entries = entries;
+
+    if (e820_sanitize(table, &e820_table)) {
         panic("Failed to sanitize E820 memory map!\n");
     }
 
     printk("[OK] E820 sanitized\n");
+}
+
+struct e820_table* e820_get_table() {
+    return &e820_table;
 }

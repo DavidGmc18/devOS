@@ -267,7 +267,7 @@ int vmm_map_hhdm() {
     }
 
     if (failed) {
-        printk(KERN_WARNING "[WARN] HHDM mapped %llu KiB but skipped %llu KiB\n", mapped / 1024, failed / 1024);
+        printk(KERN_WARNING "[WARN] HHDM mapped %llu KiB and skipped %llu KiB\n", mapped / 1024, failed / 1024);
         return -1;
     }
     

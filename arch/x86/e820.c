@@ -134,7 +134,7 @@ void e820_init(struct e820_table* table) {
         panic("Failed to sanitize E820 memory map!\n");
     }
 
-    printk("[OK] E820 sanitized\n");
+    printk("[OK] E820 sanitized & copied\n");
 }
 
 struct e820_table* e820_get_table() {

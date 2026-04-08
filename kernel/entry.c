@@ -43,8 +43,6 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     vmm_unmap_low_identity();
 
     sti();
-
-    vmm_map_hhdm();
     
     while (1) halt();
 }

@@ -1,4 +1,4 @@
-SUB_SYSTEMS = $(SOURCE_DIR)/kernel $(SOURCE_DIR)/arch $(SOURCE_DIR)/driver $(SOURCE_DIR)/lib
+SUB_SYSTEMS = $(SOURCE_DIR)/kernel $(SOURCE_DIR)/arch $(SOURCE_DIR)/driver $(SOURCE_DIR)/lib $(SOURCE_DIR)/mm
 
 HEADERS_C = $(shell find $(SUB_SYSTEMS) -type f -name "*.h")
 SOURCES_C = $(shell find $(SUB_SYSTEMS) -type f -name "*.c")

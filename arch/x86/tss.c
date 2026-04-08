@@ -1,5 +1,6 @@
 #include "tss.h"
 #include "GDT_MACROS.h"
+#include <mm/stack.h>
 
 typedef struct {
     uint32_t reserved0;
@@ -11,12 +12,8 @@ typedef struct {
     uint16_t iopb;
 } __attribute__((packed)) tss_t;
 
-// TODO is this good size for stack?
-static __attribute__((aligned(16))) unsigned char rsp0_stack[4096];
-static __attribute__((aligned(16))) unsigned char emergency_stack[4096];
-
 static tss_t tss = {
-    .rsp[0] = (uintptr_t)rsp0_stack + sizeof(rsp0_stack),
+    .rsp[0] = (uintptr_t)kern_stack + sizeof(kern_stack),
     .ist[EMERG_IST-1] = (uintptr_t)emergency_stack + sizeof(emergency_stack),
     .iopb = sizeof(tss_t)
 };

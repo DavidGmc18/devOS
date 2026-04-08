@@ -10,6 +10,7 @@
 #include <arch/x86/e820.h>
 #include <arch/x86/bootmem.h>
 #include <arch/x86/vmm.h>
+#include <mm/stack.h>
 
 extern uint8_t __bss_start;
 extern uint8_t __bss_end;
@@ -17,28 +18,13 @@ extern uint8_t __bss_end;
 #define VGA_FRAMEBUFFER ((unsigned char*)0xB8000)
 #define VGA_FRAMEBUFFER_HHDM ((unsigned char*)0xFFFF8880000B8000)
 
-#ifdef DEBUG
-// Paints the stack to estimate usage and help detecting stack underflows
-#define __MARK_STACK(s, o) memset((s), 0xDF, sizeof(s)-(o));
-#define __STACK_USED(s) ({          \
-    int used = 0;                   \
-    while(used < sizeof(s)) {       \
-        if (s[used] != 0xDF) break; \
-        used++;                     \
-    }                               \
-    sizeof(s) - used;               \
-})
-#endif
-
-static __attribute__((aligned(16))) unsigned char stack[4096];
-
 void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_table) {
     cli();
     memset(&__bss_start, 0, (&__bss_end) - (&__bss_start));
     #ifdef DEBUG
-    __MARK_STACK(stack, 0);
+    __MARK_STACK(kern_stack, 0);
     #endif
-    __asm__ volatile("mov %0, %%rsp" :: "r"(stack + sizeof(stack)) : "memory");
+    __SET_STACK(kern_stack);
 
     early_uart_init();
     early_vga_clrscr();
@@ -63,7 +49,7 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     sti();
 
     #ifdef DEBUG
-    printk(KERN_NOTICE "[NOTICE] Stack used %d B\n", __STACK_USED(stack));
+    printk(KERN_NOTICE "[NOTICE] Used %d B of the stack\n", __STACK_USED(kern_stack));
     #endif
     while (1) halt();
 }

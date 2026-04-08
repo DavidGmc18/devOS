@@ -11,17 +11,17 @@ typedef struct {
     uint16_t iopb;
 } __attribute__((packed)) tss_t;
 
-// TODO stack management & in /boot/kernel_entry.asm
+// TODO is this good size for stack?
+static __attribute__((aligned(16))) unsigned char rsp0_stack[4096];
+static __attribute__((aligned(16))) unsigned char emergency_stack[4096];
+
 static tss_t tss = {
-    .rsp[0] = 0x200000,
+    .rsp[0] = (uintptr_t)rsp0_stack + sizeof(rsp0_stack),
+    .ist[EMERG_IST-1] = (uintptr_t)emergency_stack + sizeof(emergency_stack),
     .iopb = sizeof(tss_t)
 };
 
-static uint8_t emergency_stack[4096] __attribute__((aligned(16)));
-
 void tss_set(gdt_entry_t* tss_gdt_entry) {
-    tss.ist[EMERG_IST-1] = (uint64_t)emergency_stack + sizeof(emergency_stack);
-
     tss_gdt_entry->limit_low = sizeof(tss_t) - 1;
     tss_gdt_entry->base_low = (uint16_t)(uintptr_t)&tss;
     tss_gdt_entry->base_mid = (uint8_t)((uintptr_t)&tss >> 16);

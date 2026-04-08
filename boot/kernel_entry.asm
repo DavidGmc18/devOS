@@ -58,7 +58,7 @@ long_mode:
     mov gs, ax
     mov ss, ax
     
-    mov rsp, 0x200000 ; TODO organize stack
+    mov rsp, 0x200000
 
     mov rdi, [rel e820_table_ptr]
     jmp [kernel_virt]

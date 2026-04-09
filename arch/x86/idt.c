@@ -6,8 +6,8 @@
 typedef struct {
     uint16_t offset_low;
     uint16_t segment;
-    uint8_t ist : 3, zero : 5;
-    uint8_t type : 5, dpl : 2, p : 1;
+    uint8_t ist;
+    uint8_t attributes;
     uint16_t offset_mid;
     uint32_t offset_high;
     uint32_t reserved;
@@ -39,11 +39,8 @@ void idt_set_gate(uint8_t interrupt, void* offset, uint16_t segment, uint8_t ist
     
     gates[interrupt].offset_low = (uintptr_t)offset;
     gates[interrupt].segment = segment;
-    gates[interrupt].ist = ist;
-    gates[interrupt].zero = 0;
-    gates[interrupt].type = type;
-    gates[interrupt].dpl = dpl;
-    gates[interrupt].p = p;
+    gates[interrupt].ist = ist & 0x7;
+    gates[interrupt].attributes = (type & 0x1F) | ((dpl & 0x3) << 5) | ((p & 0x1) << 7);
     gates[interrupt].offset_mid = ((uintptr_t)offset) >> 16;
     gates[interrupt].offset_high = ((uintptr_t)offset) >> 32;
     gates[interrupt].reserved = 0;

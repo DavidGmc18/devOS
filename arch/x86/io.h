@@ -47,3 +47,7 @@ static inline void cli() {
 static inline void sti() {
     __asm__ volatile ("sti" ::: "memory");
 }
+
+static inline void set_rsp(void* rsp) {
+    __asm__ volatile("mov %0, %%rsp" :: "r"(rsp) : "memory");
+}

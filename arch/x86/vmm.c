@@ -132,7 +132,7 @@ uint64_t* get_or_create_table(uint64_t* table, uint32_t idx) {
         else return sub_table;
     }
 
-    uint64_t* sub_table = (uint64_t*)bootmem_alloc(PAGE_SIZE);
+    uint64_t* sub_table = (uint64_t*)bootmem_alloc_page_phys();
     if (!sub_table) return NULL;
     memset(sub_table, 0, PAGE_SIZE);
     table[idx] = (uint64_t)sub_table | PT_PRESENT | PT_WRITABLE;

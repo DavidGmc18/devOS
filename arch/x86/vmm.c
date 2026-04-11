@@ -262,20 +262,18 @@ int vmm_map_hhdm() {
         uint64_t flags = PT_PRESENT | PT_GLOBAL | PT_NX;
         switch (entries[i].type) {
             case E820_TYPE_RAM:
-            case E820_TYPE_NVS:
                 flags |= PT_WRITABLE;
                 break;
 
-            case E820_TYPE_RESERVED:
-                flags |= PT_WRITABLE | PT_PCD | PT_PWT;
-                break;
-
-            case E820_TYPE_UNUSABLE:
-                flags |= PT_PCD | PT_PWT;
-                break;
-
+            case E820_TYPE_NVS:
             case E820_TYPE_ACPI:
-            default: break;
+                break;
+
+            case E820_TYPE_RESERVED:
+            case E820_TYPE_UNUSABLE:
+            default: 
+                flags = PT_PCD | PT_PWT;
+            break;
         }
 
         failed +=set_range(HHDM_BASE + entries[i].addr, entries[i].addr, entries[i].size, flags, 0);
@@ -312,8 +310,88 @@ int vmm_unmap_low_identity() {
     return 0;
 }
 
-size_t vmm_map(uintptr_t virt, uintptr_t phys, uint64_t size, uintptr_t flags) {
-    if ((virt & (LARGE_PAGE_SIZE - 1)) != (phys & (LARGE_PAGE_SIZE - 1)))
-        return set_pages(virt, phys, size, flags, 0);
+size_t vmm_map(uintptr_t virt, uintptr_t phys, size_t size, uintptr_t flags) {
+    if ((virt & (LARGE_PAGE_SIZE - 1)) != (phys & (LARGE_PAGE_SIZE - 1))) {
+        if ((virt & (PAGE_SIZE - 1)) != (phys & (PAGE_SIZE - 1))) return size;
+        size_t failed = 0;
+
+        uintptr_t virt_end = virt + size;
+
+        if (virt & (PAGE_SIZE - 1)) {
+            uintptr_t offset = ROUND_UP(virt, PAGE_SIZE) - virt;
+            virt += offset;
+            phys += offset;
+            failed += offset;
+        }
+
+        if (virt_end & (PAGE_SIZE - 1)) {
+            uintptr_t offset = virt_end - ROUND_DOWN(virt_end, PAGE_SIZE);
+            virt_end -= offset;
+            failed += offset;
+        }
+
+        if (virt >= virt_end) return size;
+        size = virt_end - virt;
+
+        failed += set_pages(virt, phys, size, flags, 0);
+        return failed;
+    }
     return set_range(virt, phys, size, flags, 0);
+}
+
+static int is_pt_mapped(uint64_t* pt, uint32_t start_idx, uint32_t entries_count) {
+    if (!pt) return -1;
+
+    uint32_t end_idx = start_idx + entries_count;
+    if (end_idx > 512) end_idx = 512;
+    
+    for (uint32_t i = start_idx; i < end_idx; i++) {
+        uint64_t entry = pt[i];
+        if (!(entry & PT_PRESENT)) continue;
+        return 1;
+    }
+
+    return 0;
+}
+
+int vmm_virt_range_has_mapping(uintptr_t virt, size_t size) {
+    uintptr_t end = virt + size;
+
+    while (virt < end) {
+        uint16_t idx = (virt >> 39) & 0x1FF;
+        uint64_t entry = kern_pml4[idx];
+        if (!(entry & PT_PRESENT)) { 
+            virt = ROUND_DOWN(virt, 0x8000000000) + 0x8000000000;
+            continue; 
+        }
+
+        uint64_t* pdpt = phys_to_table(entry & ~FLAGS_MASK);
+        idx = (virt >> 30) & 0x1FF;
+        entry = pdpt[idx];
+        if (!(entry & PT_PRESENT)) {
+            virt = ROUND_DOWN(virt, 0x40000000) + 0x40000000;
+            continue;
+        }
+        if (entry & PT_PSE) return 1;
+
+        uint64_t* pd = phys_to_table(entry & ~FLAGS_MASK);
+        idx = (virt >> 21) & 0x1FF;
+        entry = pd[idx];
+        if (!(entry & PT_PRESENT)) {
+            virt = ROUND_DOWN(virt, LARGE_PAGE_SIZE) + LARGE_PAGE_SIZE;
+            continue;
+        }
+        if (entry & PT_PSE) return 1;
+
+        uint64_t* pt = phys_to_table(entry & ~FLAGS_MASK);
+        idx = (virt >> 12) & 0x1FF;
+        entry = pt[idx];
+        if (!(entry & PT_PRESENT)) {
+            virt += PAGE_SIZE;
+            continue;
+        }
+        return 1;
+    }
+
+    return 0;
 }

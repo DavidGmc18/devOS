@@ -19,4 +19,5 @@ uintptr_t vmm_get_low_map_end();
 int vmm_map_hhdm();
 int vmm_unmap_low_identity();
 
-size_t vmm_map(uintptr_t virt, uintptr_t phys, uint64_t size, uintptr_t flags);
+size_t vmm_map(uintptr_t virt, uintptr_t phys, size_t size, uintptr_t flags);
+int vmm_virt_range_has_mapping(uintptr_t virt, size_t size);

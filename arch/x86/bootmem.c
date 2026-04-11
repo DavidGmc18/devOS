@@ -41,7 +41,7 @@ int bootmem_init() {
     }
 
     if (!pool_start) panic("Bootmem failed to create pool!\n");
-    if (pool_start > vmm_get_early_addr_limit()) panic("Bootmem failed to create pool!\n");
+    if (pool_start > vmm_get_low_map_end()) panic("Bootmem failed to create pool!\n");
 
     pool_start = ROUND_UP(pool_start, PAGE_SIZE);
     pool_end = pool_start;
@@ -55,14 +55,14 @@ uintptr_t bootmem_alloc_page_phys() {
     uint32_t entries_count = table->entries_count;
     struct e820_entry* entries = table->entries;
 
-    uintptr_t allocation = ROUND_UP(pool_end, PAGE_SIZE);
-
     if (current_e820_entry >= entries_count) panic("Bootmem state corrupted!\n");
-    if (entries[current_e820_entry].addr > allocation) panic("Bootmem state corrupted!\n");
+    if (entries[current_e820_entry].addr > pool_end) panic("Bootmem state corrupted!\n");
+
+    uintptr_t allocation = ROUND_UP(pool_end, PAGE_SIZE);
 
     for (uint32_t i = current_e820_entry; i < entries_count; i++) {
         if (entries[i].type != E820_TYPE_RAM) continue;
-        if (allocation < entries[i].addr) allocation = entries[i].addr;
+        if (allocation < entries[i].addr) allocation = ROUND_UP(entries[i].addr, PAGE_SIZE);
         if (allocation + PAGE_SIZE > entries[i].addr + entries[i].size) continue;
 
         pool_end = (allocation + PAGE_SIZE);

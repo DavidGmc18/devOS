@@ -1,5 +1,4 @@
 #include "bootmem.h"
-#include <stddef.h>
 #include <printk.h>
 #include <panic.h>
 #include "e820.h"
@@ -90,4 +89,78 @@ uintptr_t bootmem_get_pool_end() {
 
 uint64_t bootmem_get_pool_bytes() {
     return pool_bytes;
+}
+
+struct alloc_segment {
+    size_t size;
+    struct alloc_segment* next;
+};
+
+static struct alloc_segment* __alloc(size_t bytes) {
+    if (!bytes) return NULL;
+
+    size_t allocated = 0;
+    struct alloc_segment* allocation = NULL;
+    struct alloc_segment* current_segment = NULL;
+
+    struct e820_table* table = e820_get_table();
+    uint32_t entries_count = table->entries_count;
+    struct e820_entry* entries = table->entries;
+
+    for (uint32_t i = current_e820_entry; i < entries_count; i++) {
+        if (entries[i].type != E820_TYPE_RAM) continue;
+
+        uintptr_t segment_end = ROUND_DOWN(entries[i].addr + entries[i].size, PAGE_SIZE);
+
+        uintptr_t segment_start = (pool_end > entries[i].addr) ? pool_end : entries[i].addr;
+        segment_start = ROUND_UP(segment_start, PAGE_SIZE);
+        if (segment_start >= segment_end) continue;
+
+        size_t remaining = bytes - allocated;
+        if (segment_start + remaining < segment_end) segment_end = segment_start + remaining;
+        
+        size_t segment_size = segment_end - segment_start;
+
+        struct alloc_segment* prev_segment = current_segment;
+        current_segment = (struct alloc_segment*)(segment_start + HHDM_BASE);
+        current_segment->size = segment_size;
+        current_segment->next = NULL;
+        if (prev_segment) prev_segment->next = current_segment;
+        if (!allocation) allocation = current_segment;
+
+        allocated += segment_size;
+        if (allocated < bytes) continue;
+
+        pool_end = segment_end;
+        pool_bytes += bytes;
+        current_e820_entry = i;
+        return allocation;
+    }
+
+    return NULL;
+}
+
+void* bootmem_map_alloc(uintptr_t virt, size_t bytes, uintptr_t flags) {
+    if (!bytes) return NULL;
+    bytes = ROUND_UP(bytes, PAGE_SIZE);
+
+    if (vmm_virt_range_has_mapping(virt, bytes)) return NULL;
+
+    struct alloc_segment* segment = __alloc(bytes);
+    if (!segment) return NULL;
+
+    size_t failed = 0;
+
+    size_t offset = 0;
+    while (segment) {
+        uintptr_t phys = (uintptr_t)segment - HHDM_BASE;
+        failed = vmm_map(virt + offset, phys, segment->size, flags);
+        offset += segment->size;
+        segment = segment->next;
+    }
+
+    if (failed) panic("Bootmem map alloc failed, can't recover\n");
+    if (offset != bytes) panic("Bootmem map alloc failed, can't recover\n");
+
+    return (void*)virt;
 }

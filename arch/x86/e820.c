@@ -9,6 +9,8 @@
 static struct e820_entry entries[E820_MAX_ENTRIES];
 static struct e820_table e820_table;
 
+static uintptr_t last_ram_addr;
+
 /* * ============================================================================
  * BEGIN DERIVATIVE CODE 
  * The logic below is derived from the Linux kernel (arch/x86/kernel/e820.c).
@@ -134,9 +136,22 @@ void e820_init(struct e820_table* table) {
         panic("Failed to sanitize E820 memory map!\n");
     }
 
+    last_ram_addr = 0;
+    for (uint32_t i = e820_table.entries_count; i-- > 0;) {
+        if (e820_table.entries[i].type == E820_TYPE_RAM) {
+            last_ram_addr = e820_table.entries[i].addr + e820_table.entries[i].size;
+            break;
+        }
+    }
+    if (last_ram_addr == 0) panic("Failed to find last ram address\n");
+
     printk("[OK] E820 sanitized & copied\n");
 }
 
 struct e820_table* e820_get_table() {
     return &e820_table;
+}
+
+uintptr_t e820_get_last_ram_addr() {
+    return last_ram_addr;
 }

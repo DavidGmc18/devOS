@@ -29,3 +29,5 @@ struct e820_table {
 void e820_init(struct e820_table* table);
 
 struct e820_table* e820_get_table();
+
+uintptr_t e820_get_last_ram_addr();

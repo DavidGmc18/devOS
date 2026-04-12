@@ -4,12 +4,12 @@
 #include "e820.h"
 #include <math.h>
 #include "vmm.h"
+#include <mm/page.h>
 
 extern char KERNEL_PHYS[];
 extern char __kernel_vma_start[];
 extern char __kernel_vma_end[];
 
-#define PAGE_SIZE 4096
 #define KERNEL_BASE (uintptr_t)KERNEL_PHYS
 #define KERNEL_SIZE ((uintptr_t)__kernel_vma_end - (uintptr_t)__kernel_vma_start)
 #define KERNEL_END (KERNEL_BASE + KERNEL_SIZE)
@@ -21,7 +21,18 @@ static uintptr_t pool_end;
 static uint32_t current_e820_entry;
 static uint64_t pool_bytes;
 
+enum {
+    DISABLED,
+    ENABLED,
+    LOCKED
+} state = DISABLED;
+
 int bootmem_init() {
+    if (state != DISABLED) {
+        printk(KERN_ERR"[ERR] Bootmem was alredy initialized\n");
+        return -1;
+    }
+
     pool_start = 0;
     pool_end = 0;
     pool_bytes = 0;
@@ -45,11 +56,18 @@ int bootmem_init() {
     pool_start = ROUND_UP(pool_start, PAGE_SIZE);
     pool_end = pool_start;
 
+    state = ENABLED;
     printk("[OK] Bootmem created pool\n");
     return 0;
 }
 
 uintptr_t bootmem_alloc_page_phys() {
+    if (state != ENABLED) {
+        if (state == DISABLED) printk(KERN_ERR"[ERR] Bootmem was not initialized, can't alloc\n");
+        if (state == LOCKED) printk(KERN_ERR"[ERR] Bootmem is locked, can't alloc\n");
+        return 0;
+    }
+
     struct e820_table* table = e820_get_table();
     uint32_t entries_count = table->entries_count;
     struct e820_entry* entries = table->entries;
@@ -97,6 +115,11 @@ struct alloc_segment {
 };
 
 static struct alloc_segment* __alloc(size_t bytes) {
+    if (state != ENABLED) {
+        if (state == DISABLED) printk(KERN_ERR"[ERR] Bootmem was not initialized, can't alloc\n");
+        if (state == LOCKED) printk(KERN_ERR"[ERR] Bootmem is locked, can't alloc\n");
+        return NULL;
+    }
     if (!bytes) return NULL;
 
     size_t allocated = 0;
@@ -137,10 +160,19 @@ static struct alloc_segment* __alloc(size_t bytes) {
         return allocation;
     }
 
+    printk(KERN_WARNING "[WARN] Allocation failed, requested %lld KiB but found only %lld KiB\n", bytes / 1024, allocated / 1024);
     return NULL;
 }
 
-void* bootmem_map_alloc(uintptr_t virt, size_t bytes, uintptr_t flags) {
+void* bootmem_alloc_mapped(uintptr_t virt, size_t bytes, uintptr_t flags) {
+    if (state != ENABLED) {
+        if (state == DISABLED) printk(KERN_ERR"[ERR] Bootmem was not initialized, can't alloc\n");
+        if (state == LOCKED) printk(KERN_ERR"[ERR] Bootmem is locked, can't alloc\n");
+        return NULL;
+    }
+
+    if (!virt) return NULL;
+
     if (!bytes) return NULL;
     bytes = ROUND_UP(bytes, PAGE_SIZE);
 
@@ -163,4 +195,8 @@ void* bootmem_map_alloc(uintptr_t virt, size_t bytes, uintptr_t flags) {
     if (offset != bytes) panic("Bootmem map alloc failed, can't recover\n");
 
     return (void*)virt;
+}
+
+void bootmem_lock() {
+    state = LOCKED;
 }

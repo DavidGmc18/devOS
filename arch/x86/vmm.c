@@ -5,6 +5,7 @@
 #include "math.h"
 #include "bootmem.h"
 #include <stdbool.h>
+#include <mm/page.h>
 
 // TODO add huge pages
 
@@ -12,9 +13,7 @@ extern char __kernel_vma_start[];
 extern char KERNEL_PHYS[];
 #define HHDM_BASE (0xFFFF888000000000)
 
-#define PAGE_SIZE (4096)
 #define FLAGS_MASK (0x8000000000000FFF)
-
 #define LARGE_PAGE_SIZE (0x200000)
 #define LARGE_FLAGS_MASK (0x80000000001FFFFF)
 

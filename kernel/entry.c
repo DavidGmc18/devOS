@@ -1,16 +1,20 @@
+#include <printk.h>
+#include <string.h>
+
 #include <driver/uart/early_uart.h>
 #include <driver/vga/early_vga.h>
-#include <printk.h>
+
 #include <arch/x86/io.h>
 #include <arch/x86/idt.h>
 #include <arch/x86/isr.h>
 #include <arch/x86/irq.h>
 #include <arch/x86/gdt.h>
-#include <string.h>
 #include <arch/x86/e820.h>
 #include <arch/x86/bootmem.h>
 #include <arch/x86/vmm.h>
+
 #include <mm/stack.h>
+#include <mm/mem.h>
 
 extern uint8_t __bss_start;
 extern uint8_t __bss_end;
@@ -45,6 +49,8 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     vmm_map_hhdm();
     early_vga_init(VGA_FRAMEBUFFER_HHDM);
     vmm_unmap_low_identity();
+
+    mem_init();
 
     #ifdef DEBUG
     printk(KERN_NOTICE "[NOTICE] Used %d B of the stack\n", __STACK_USED(kern_stack));

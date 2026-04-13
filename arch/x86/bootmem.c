@@ -4,7 +4,7 @@
 #include "e820.h"
 #include <math.h>
 #include "vmm.h"
-#include <mm/page.h>
+#include <page.h>
 
 extern char KERNEL_PHYS[];
 extern char __kernel_vma_start[];
@@ -19,7 +19,7 @@ extern char __kernel_vma_end[];
 static uintptr_t pool_start;
 static uintptr_t pool_end;
 static uint32_t current_e820_entry;
-static uint64_t pool_bytes;
+static size_t pool_bytes;
 
 enum {
     DISABLED,
@@ -199,4 +199,5 @@ void* bootmem_alloc_mapped(uintptr_t virt, size_t bytes, uintptr_t flags) {
 
 void bootmem_lock() {
     state = LOCKED;
+    printk(KERN_INFO "[INFO] Bootmem locked, pool size is %zu KiB\n", pool_bytes / 1024);
 }

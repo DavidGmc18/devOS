@@ -5,7 +5,7 @@
 #include "math.h"
 #include "bootmem.h"
 #include <stdbool.h>
-#include <mm/page.h>
+#include <page.h>
 
 // TODO add huge pages
 

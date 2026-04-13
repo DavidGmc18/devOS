@@ -1,14 +1,14 @@
 #pragma once
 
-#include <stdint.h>
-
 #define PAGE_SIZE (4096)
 
-#define PAGE_RESERVED (1 << 0)
-#define PAGE_BUDDY (1 << 1)
+#define PG_RESERVED (1 << 0)
+#define PG_BUDDY (1 << 1)
+
+#define PAGE_MAX_ORDER 10
 
 struct page {
     unsigned char flags;
-    uint8_t order;
+    unsigned char order;
     struct page* next_free;
 };

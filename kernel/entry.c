@@ -51,10 +51,10 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     vmm_unmap_low_identity();
 
     mem_init();
+    buddy_init();
 
     #ifdef DEBUG
     printk(KERN_NOTICE "[NOTICE] Used %d B of the stack\n", __STACK_USED(kern_stack));
-    printk(KERN_NOTICE "[NOTICE] Bootmem allocated %lld KiB\n", bootmem_get_pool_bytes() / 1024);
     #endif
 
     sti();

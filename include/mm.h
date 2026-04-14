@@ -2,4 +2,4 @@
 
 #include <page.h>
 
-struct page* alloc_pages(unsigned long order);
+struct page* alloc_pages(unsigned char order);

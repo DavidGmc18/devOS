@@ -31,8 +31,8 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     __SET_STACK(kern_stack);
 
     early_uart_init();
-    early_vga_clrscr();
     early_vga_init(VGA_FRAMEBUFFER);
+    early_vga_clrscr();
     printk_sink_register((printk_sink_t){.name = "UART    ", .write = early_uart_log_write});
     printk_sink_register((printk_sink_t){.name = "VGA     ", .write = early_vga_log_write});
     printk("Kernel loaded at %#p\n", entry);

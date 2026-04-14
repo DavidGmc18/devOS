@@ -142,8 +142,8 @@ int buddy_init() {
     return 0;
 }
 
-struct page* alloc_pages(unsigned long order) {
-    if (order > PAGE_MAX_ORDER) panic("Order %d is more than or equal as limit (%d)\n", order);
+struct page* alloc_pages(unsigned char  order) {
+    if (order > PAGE_MAX_ORDER) panic("Order %d is more than maximum of %d\n", order, PAGE_MAX_ORDER);
 
     struct page* page = NULL;
     for (unsigned char i = order; i <= PAGE_MAX_ORDER; i++) {

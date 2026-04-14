@@ -21,6 +21,8 @@ static inline void insert_free(struct page* page) {
 
     if (page->next) page->next->prev = page;
     free_matrix[order] = page;
+
+    page->state = PG_BUDDY;
 }
 
 static inline struct page* pop_free(unsigned char order) {
@@ -41,6 +43,12 @@ static inline void remove_free(struct page* page) {
     unsigned char order = page->order;
     if (order > PAGE_MAX_ORDER) panic("Order %d is more than or equal as limit (%d)\n", order);
 
+    if (page->state != PG_BUDDY) return;
+
+    // If prev & next are NULL, it means that this page is not linked in free_matrix, or that its only entry in its order list,
+    // so we check if page is not first/only entry in free_matrix[order]
+    if (!page->prev && !page->next && (free_matrix[order] != page)) return; 
+
     if (page->prev) page->prev->next = page->next; else free_matrix[order] = page->next;
     if (page->next) page->next->prev = page->prev;
 
@@ -48,8 +56,8 @@ static inline void remove_free(struct page* page) {
     page->prev = NULL;
 }
 
-static inline int alignment_order(unsigned long long addr) {
-    int alignment_order = (addr == 0) ? (8 * sizeof(unsigned long long)) : __builtin_ctzll(addr);
+static inline int alignment_order(unsigned long long pfn) {
+    int alignment_order = (pfn == 0) ? (8 * sizeof(unsigned long long)) : __builtin_ctzll(pfn);
     if (alignment_order > PAGE_MAX_ORDER) return PAGE_MAX_ORDER;
     return alignment_order;
 }
@@ -60,17 +68,14 @@ static inline int length_order(unsigned long long length) {
     return (8 * sizeof(unsigned long long) - 1) - __builtin_clzll(length);
 }
 
-static size_t set_buddy_range(uintptr_t start_page, uintptr_t end_page) {
+static size_t set_first_order_buddy_for_range(uintptr_t start_page, uintptr_t end_page) {
     if (end_page > mem_nr_pages) end_page = mem_nr_pages;
     if (start_page >= end_page) return 0;
     for (uintptr_t i = start_page; i < end_page; i++) {
-        mem_map[i].flags = PG_BUDDY;
+        mem_map[i].state = PG_BUDDY;
+        mem_map[i].order = 0;
     }
     return end_page - start_page;
-}
-
-static uintptr_t page_to_addr(struct page* page) {
-    return (page - mem_map) * PAGE_SIZE;
 }
 
 int buddy_init() {
@@ -93,56 +98,55 @@ int buddy_init() {
         // If start/end overlaps reserved segment
         if (start_page >= reserved_start_page && start_page < reserved_end_page) start_page = reserved_end_page;
         if (end_page > reserved_start_page && end_page <= reserved_end_page) end_page = reserved_start_page;
+        if (start_page >= end_page) continue;
 
         // If reserved segment is inside of current
         if (start_page < reserved_start_page && end_page > reserved_end_page) {
-            expected_pages += set_buddy_range(start_page, reserved_start_page);
-            expected_pages += set_buddy_range(reserved_end_page, end_page);
+            expected_pages += set_first_order_buddy_for_range(start_page, reserved_start_page);
+            expected_pages += set_first_order_buddy_for_range(reserved_end_page, end_page);
         } else {
-            expected_pages += set_buddy_range(start_page, end_page);
+            expected_pages += set_first_order_buddy_for_range(start_page, end_page);
         }
     }
 
     // Group
     size_t accounted_pages = 0;
     for (uintptr_t i = 0; i < mem_nr_pages;) {
-        if (!(mem_map[i].flags & PG_BUDDY)) {
+        if (mem_map[i].state != PG_BUDDY) {
             i++;
             continue;
         }
 
-        int ao = alignment_order(i);
-        uintptr_t max_buddy_size = 1ULL << ao;
-        uintptr_t end = ((i + max_buddy_size) <= mem_nr_pages) ? (i + max_buddy_size) : mem_nr_pages;
+        size_t max_pages_in_block = 1ULL << alignment_order(i);
+        uintptr_t end = ((i + max_pages_in_block) <= mem_nr_pages) ? (i + max_pages_in_block) : mem_nr_pages;
 
         uintptr_t j = i;
         while (j < end ) {
-            if (!(mem_map[j].flags & PG_BUDDY)) break;
+            if (mem_map[j].state != PG_BUDDY) break;
             j++;
         }
 
-        int order = length_order(j - i);
-        uintptr_t buddy_size = 1ULL << order;
-        
-        mem_map[i].order = order;
-        insert_free(&mem_map[i]);
+        uintptr_t continuous_pages_count = j - i;
+        mem_map[i].order = length_order(continuous_pages_count);
 
-        for (j = (i + 1); j < (i + buddy_size); j++) {
-            mem_map[j].flags &= ~PG_BUDDY;
+        size_t pages_in_block = 1ULL << mem_map[i].order;
+        for (j = (i + 1); j < (i + pages_in_block); j++) {
+            mem_map[j].state = PG_TAIL;
         }
 
-        accounted_pages += buddy_size;
-        i += buddy_size;
+        insert_free(&mem_map[i]);
+        accounted_pages += pages_in_block;
+        i += pages_in_block;
     }
 
-    if (expected_pages != accounted_pages) panic("Buddy grouping failed, expecyed %zu pages but accounted %zu\n", expected_pages, accounted_pages);
+    if (expected_pages != accounted_pages) panic("Buddy grouping failed, expected %zu pages but accounted %zu\n", expected_pages, accounted_pages);
     managed_mem = accounted_pages * PAGE_SIZE;
 
     printk("[OK] Buddy allocator initialized, managed mem is %zu KiB\n", managed_mem / 1024);
     return 0;
 }
 
-struct page* alloc_pages(unsigned char  order) {
+struct page* alloc_pages(unsigned char order) {
     if (order > PAGE_MAX_ORDER) panic("Order %d is more than maximum of %d\n", order, PAGE_MAX_ORDER);
 
     struct page* page = NULL;
@@ -157,42 +161,43 @@ struct page* alloc_pages(unsigned char  order) {
         page->order -= 1;
 
         struct page* buddy = &page[1ULL << page->order];
-        buddy->flags |= PG_BUDDY;
+        if (buddy->state != PG_TAIL) panic("Unexpected page state, expected %u(PG_TAIL) but state is %u\n", PG_TAIL, buddy->state);
+        // buddy->state = PG_BUDDY; // This is reduntant
         buddy->order = page->order;
-        insert_free(buddy);
+        insert_free(buddy); // sets -> buddy->state = PG_BUDDY
     }
 
-    for (uintptr_t i = 0; i < (1ULL << page->order); i++) {
-        page[i].flags &= ~PG_BUDDY;
-    }
-    page->flags |= PG_ALLOCATED;
+    page->state = PG_ALLOCATED;
     return page;
 }
 
 void free_pages(struct page* page) {
-    if (!(page->flags & PG_ALLOCATED)) return;
-    page->flags &= ~PG_ALLOCATED;
-    page->flags |= PG_BUDDY;
+    if (page->state != PG_ALLOCATED) return;
 
+    // Set prev & next to NULL -> hinting that this page is not in free_matrix
+    page->state = PG_BUDDY;
+    page->prev = NULL;
+    page->next = NULL;
+
+    // Merge corrent block as much as possible and then add it to free_matrix
     while (page->order < PAGE_MAX_ORDER) {
-        int ao = alignment_order(page_to_addr(page));
-
-        if (ao > page->order) {
-            // Merge with rigth buddy
+        uintptr_t pfn = (struct page*)page - (struct page*)mem_map;
+        if (alignment_order(pfn) > page->order) {
+            // Potentional buddy to merge with is on rigth (after)
             struct page* buddy = &page[1ULL << page->order];
-            if (buddy > &mem_map[mem_nr_pages-1]) break;
-            if ((buddy->flags & PG_BUDDY) && (buddy->order == page->order)) {
-                remove_free(buddy);
-                buddy->flags &= ~PG_BUDDY;
+            if (buddy >= &mem_map[mem_nr_pages]) break;
+            if ((buddy->state == PG_BUDDY) && (buddy->order == page->order)) {
+                remove_free(buddy); // Won't be removed if its not in free_matrix
+                buddy->state = PG_TAIL;
                 page->order += 1;
             } else break;
         } else {
-            // Merge with left buddy
+            // Potentional buddy to merge with is on left (before)
             struct page* buddy = &page[-(1ULL << page->order)];
             if (buddy < mem_map) break;
-            if ((buddy->flags & PG_BUDDY) && (buddy->order == page->order)) {
-                remove_free(buddy);
-                page->flags &= ~PG_BUDDY;
+            if ((buddy->state == PG_BUDDY) && (buddy->order == page->order)) {
+                remove_free(page); // Won't be removed if its not in free_matrix
+                page->state = PG_TAIL;
                 buddy->order += 1;
                 page = buddy;
             } else break;

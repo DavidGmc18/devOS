@@ -6,6 +6,7 @@
 #include <arch/x86/vmm.h>
 #include <panic.h>
 #include <printk.h>
+#include <string.h>
 
 #define MEM_MAP_ADDR (0xFFFFEA0000000000)
 struct page* mem_map;
@@ -22,8 +23,10 @@ int mem_init() {
     mem_map = (struct page*)bootmem_alloc_mapped(MEM_MAP_ADDR, mem_nr_pages * sizeof(struct page), PT_PRESENT | PT_GLOBAL | PT_NX | PT_WRITABLE);
     if (!mem_map) panic("Memory map module failed to allocate\n");
 
+    memset(mem_map, 0, mem_nr_pages * sizeof(struct page));
+
     for (uintptr_t i = 0; i < mem_nr_pages; i++) {
-        mem_map[i].flags = PG_RESERVED;
+        mem_map[i].state = PG_RESERVED;
     } 
 
     printk("[OK] Memory map initialized\n");

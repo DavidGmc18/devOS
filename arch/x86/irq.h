@@ -1,4 +1,7 @@
 #pragma once
 
+#include "interrupt.h"
+
 void irq_init();
-void irq_set_gate(uint8_t irq, void* offset, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p);
+
+void irq_dispatch(struct regs *r);

@@ -12,6 +12,7 @@
 #include <arch/x86/e820.h>
 #include <arch/x86/bootmem.h>
 #include <arch/x86/vmm.h>
+#include <arch/x86/pit.h>
 
 #include <mm/stack.h>
 #include <mm/mem.h>
@@ -52,6 +53,8 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
 
     mem_init();
     buddy_init();
+
+    pit_set_freq(1000);
 
     #ifdef DEBUG
     printk(KERN_NOTICE "[NOTICE] Used %d B of the stack\n", __STACK_USED(kern_stack));

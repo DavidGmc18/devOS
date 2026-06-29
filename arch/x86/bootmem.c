@@ -176,7 +176,7 @@ void* bootmem_alloc_mapped(uintptr_t virt, size_t bytes, uintptr_t flags) {
     if (!bytes) return NULL;
     bytes = ROUND_UP(bytes, PAGE_SIZE);
 
-    if (vmm_virt_range_has_mapping(virt, bytes)) return NULL;
+    if (vmm_virt_range_has_mapping(KERN_PML4, virt, bytes)) return NULL;
 
     struct alloc_segment* segment = __alloc(bytes);
     if (!segment) return NULL;
@@ -186,7 +186,7 @@ void* bootmem_alloc_mapped(uintptr_t virt, size_t bytes, uintptr_t flags) {
     size_t offset = 0;
     while (segment) {
         uintptr_t phys = (uintptr_t)segment - HHDM_BASE;
-        failed = vmm_map(virt + offset, phys, segment->size, flags);
+        failed = vmm_map(KERN_PML4, virt + offset, phys, segment->size, flags);
         offset += segment->size;
         segment = segment->next;
     }

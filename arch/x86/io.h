@@ -36,6 +36,7 @@ static inline void io_wait() {
     outb(0x80, 0);
 }
 
+// TODO arguably some of these are not really io
 static inline void halt() {
     __asm__ volatile ("hlt" ::: "memory");
 }
@@ -50,4 +51,10 @@ static inline void sti() {
 
 static inline void set_rsp(void* rsp) {
     __asm__ volatile("mov %0, %%rsp" :: "r"(rsp) : "memory");
+}
+
+static inline uint64_t cr2(void) {
+    uint64_t cr2;
+    asm volatile("mov %%cr2, %0" : "=r"(cr2));
+    return cr2;
 }

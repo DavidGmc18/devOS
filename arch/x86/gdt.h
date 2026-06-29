@@ -7,6 +7,9 @@ typedef enum {
     GDT_KERNEL_CODE_SEGMENT = 0x08,
     GDT_KERNEL_DATA_SEGMENT = 0x10,
     GDT_TSS_SEGMENT = 0x18, // 16B
+    // GDT_TSS_SEGMENT second part = 0x20
+    GDT_USER_CODE_SEGMENT = 0x28,
+    GDT_USER_DATA_SEGMENT = 0x30,
 } gdt_segment_t;
 
 typedef struct {

@@ -20,6 +20,18 @@ static gdt_entry_t gdt[] = {
 
     [GDT_TSS_SEGMENT/8] = {0},
     [GDT_TSS_SEGMENT/8+1] = {0},
+
+    [GDT_USER_CODE_SEGMENT/8] = {
+        .limit_low=0xFFFF,
+        .access = A(0) | RW(1) | DC(0) | E(1) | S(1) | DPL(3) | P(1),
+        .limit_flags = LIMIT_HIGH(0xF) | L(1) | DB(0) | G(1) 
+    },
+
+    [GDT_USER_DATA_SEGMENT/8] = {
+        .limit_low=0xFFFF,
+        .access = A(0) | RW(1) | DC(0) | E(0) | S(1) | DPL(3) | P(1),
+        .limit_flags = LIMIT_HIGH(0xF) | L(0) | DB(1) | G(1) 
+    },
 };
 
 static struct {

@@ -12,21 +12,21 @@ typedef struct {
     uint16_t iopb;
 } __attribute__((packed)) tss_t;
 
-static tss_t tss = {
-    .rsp[0] = (uintptr_t)kern_stack + sizeof(kern_stack),
-    .ist[EMERG_IST-1] = (uintptr_t)emergency_stack + sizeof(emergency_stack),
-    .iopb = sizeof(tss_t)
-};
+static tss_t tss;
 
 void tss_set(gdt_entry_t* tss_gdt_entry) {
+    tss.rsp[0] = (uintptr_t)kern_stack + sizeof(kern_stack);
+    tss.ist[EMERG_IST-1] = (uintptr_t)emergency_stack + sizeof(emergency_stack);
+    tss.iopb = sizeof(tss_t);
+
     tss_gdt_entry->limit_low = sizeof(tss_t) - 1;
     tss_gdt_entry->base_low = (uint16_t)(uintptr_t)&tss;
-    tss_gdt_entry->base_mid = (uint8_t)((uintptr_t)&tss >> 16);
+    tss_gdt_entry->base_mid = (uint8_t) ((uintptr_t)&tss >> 16);
     tss_gdt_entry->access = P(1) | DPL(0) | S(0) | E(1) | DC(0) | RW(0) | A(1);
     tss_gdt_entry->limit_flags = 0x0;
-    tss_gdt_entry->base_high = (uint8_t)((uintptr_t)&tss >> 24);
+    tss_gdt_entry->base_high = (uint8_t) ((uintptr_t)&tss >> 24);
 
-    uint32_t* tss_high = (uint32_t*)(tss_gdt_entry+1);
+    uint32_t* tss_high = (uint32_t*)(tss_gdt_entry + 1);
     tss_high[0] = (uint32_t)((uintptr_t)&tss >> 32);
     tss_high[1] = 0;
 }

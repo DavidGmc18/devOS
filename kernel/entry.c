@@ -14,6 +14,7 @@
 #include <arch/x86/vmm.h>
 #include <arch/x86/pit.h>
 
+#include <mm.h>
 #include <mm/stack.h>
 #include <mm/mem.h>
 
@@ -22,6 +23,11 @@ extern uint8_t __bss_end;
 
 #define VGA_FRAMEBUFFER ((unsigned char*)0xB8000)
 #define VGA_FRAMEBUFFER_HHDM ((unsigned char*)0xFFFF8880000B8000)
+
+void user_test() {
+    __asm__ volatile("cli");
+    while (1);
+}
 
 void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_table) {
     cli();
@@ -53,6 +59,7 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
 
     mem_init();
     buddy_init();
+    vmm_use_alloc_pages();
 
     pit_set_freq(1000);
 
@@ -61,5 +68,37 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     #endif
 
     sti();
+
+    // User space
+    uintptr_t user_virt = 0x100000;
+
+    struct page* user_pages = alloc_pages(1);
+    
+    // TODO text should not be writable
+    uint64_t* user_pml4 = vmm_create_user_pml4();
+    vmm_map(user_pml4, user_virt, (uintptr_t)page_to_addr(user_pages) - (0xFFFF888000000000), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
+    vmm_set_table(user_pml4);
+
+    memcpy((void*)(user_virt + PAGE_SIZE), user_test, PAGE_SIZE);
+
+    __asm__ volatile (
+        "mov %0, %%ds \n"
+        "mov %0, %%es \n"
+        
+        "pushq %q0 \n"
+        "pushq %q3 \n" // RSP
+        "pushfq \n" // RFLAGS
+        "pushq %q1 \n" // CS
+        "pushq %q2 \n" // RIP (target)
+
+        "iretq \n"
+        ::
+        "r" ((uint64_t)(GDT_USER_DATA_SEGMENT | 3)),
+        "r" ((uint64_t)(GDT_USER_CODE_SEGMENT | 3)),
+        "r" ((uint64_t)(user_virt + 0x1000)), // Text base
+        "r" ((uint64_t)(user_virt + 0x1000)) // Stack top
+        : "rax", "memory"
+    );
+
     while (1) halt();
 }

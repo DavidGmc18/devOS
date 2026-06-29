@@ -14,7 +14,9 @@
 #include <arch/x86/vmm.h>
 #include <arch/x86/pit.h>
 
+#include <addr.h>
 #include <mm.h>
+
 #include <mm/stack.h>
 #include <mm/mem.h>
 
@@ -76,7 +78,7 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     
     // TODO text should not be writable
     uint64_t* user_pml4 = vmm_create_user_pml4();
-    vmm_map(user_pml4, user_virt, (uintptr_t)page_to_addr(user_pages) - (0xFFFF888000000000), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
+    vmm_map(user_pml4, user_virt, (uintptr_t)hhdm_to_phys(page_to_hhdm(user_pages)), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
     vmm_set_table(user_pml4);
 
     memcpy((void*)(user_virt + PAGE_SIZE), user_test, PAGE_SIZE);

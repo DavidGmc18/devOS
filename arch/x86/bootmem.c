@@ -5,6 +5,7 @@
 #include <math.h>
 #include "vmm.h"
 #include <page.h>
+#include <addr.h>
 
 extern char KERNEL_PHYS[];
 extern char __kernel_vma_start[];
@@ -13,8 +14,6 @@ extern char __kernel_vma_end[];
 #define KERNEL_BASE (uintptr_t)KERNEL_PHYS
 #define KERNEL_SIZE ((uintptr_t)__kernel_vma_end - (uintptr_t)__kernel_vma_start)
 #define KERNEL_END (KERNEL_BASE + KERNEL_SIZE)
-
-#define HHDM_BASE (0xFFFF888000000000)
 
 static uintptr_t pool_start;
 static uintptr_t pool_end;

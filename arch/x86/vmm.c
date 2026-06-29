@@ -8,12 +8,12 @@
 #include <page.h>
 #include <mm.h>
 #include <panic.h>
+#include <addr.h>
 
 // TODO add huge pages
 
 extern char __kernel_vma_start[];
 extern char KERNEL_PHYS[];
-#define HHDM_BASE (0xFFFF888000000000)
 
 #define FLAGS_MASK (0x8000000000000FFF)
 #define LARGE_PAGE_SIZE (0x200000)
@@ -44,8 +44,8 @@ static inline uintptr_t virt_to_phys(uint64_t* virt) {
     return (uint64_t)virt & ~FLAGS_MASK;
 }
 
-static inline uint64_t* phys_to_virt(uintptr_t phys) {
-    if (state >= VMM_TRANSITION) return (uint64_t*)(phys + HHDM_BASE);
+static inline uint64_t* phys_to_virt(phys_addr phys) {
+    if (state >= VMM_TRANSITION) return (uint64_t*)((uintptr_t)phys + HHDM_BASE);
     return (uint64_t*)phys;
 }
 
@@ -132,7 +132,7 @@ static uint64_t* __alloc_table() {
         return (uint64_t*)bootmem_alloc_page();
     } else if (state == VMM_READY) {
         struct page* page = alloc_pages(0);
-        return (uint64_t*)page_to_addr(page);
+        return (uint64_t*)page_to_hhdm(page);
     }
     printk(KERN_ERR "No present allocator for VMM, can't alloc\n");
     return NULL;
@@ -146,7 +146,7 @@ static uint64_t* get_or_create_table(uint64_t* table, uint32_t idx) {
 
     if (entry & PT_PRESENT) {
         if (entry & PT_PSE) return NULL;
-        return phys_to_virt(entry & ~FLAGS_MASK);
+        return phys_to_virt((phys_addr)(entry & ~FLAGS_MASK));
     }
 
     uint64_t* sub_table = __alloc_table();
@@ -400,7 +400,7 @@ int vmm_virt_range_has_mapping(uint64_t* pml4, uintptr_t virt, size_t size) {
             continue; 
         }
 
-        uint64_t* pdpt = phys_to_virt(entry & ~FLAGS_MASK);
+        uint64_t* pdpt = phys_to_virt((phys_addr)(entry & ~FLAGS_MASK));
         idx = (virt >> 30) & 0x1FF;
         entry = pdpt[idx];
         if (!(entry & PT_PRESENT)) {
@@ -409,7 +409,7 @@ int vmm_virt_range_has_mapping(uint64_t* pml4, uintptr_t virt, size_t size) {
         }
         if (entry & PT_PSE) return 1;
 
-        uint64_t* pd = phys_to_virt(entry & ~FLAGS_MASK);
+        uint64_t* pd = phys_to_virt((phys_addr)(entry & ~FLAGS_MASK));
         idx = (virt >> 21) & 0x1FF;
         entry = pd[idx];
         if (!(entry & PT_PRESENT)) {
@@ -418,7 +418,7 @@ int vmm_virt_range_has_mapping(uint64_t* pml4, uintptr_t virt, size_t size) {
         }
         if (entry & PT_PSE) return 1;
 
-        uint64_t* pt = phys_to_virt(entry & ~FLAGS_MASK);
+        uint64_t* pt = phys_to_virt((phys_addr)(entry & ~FLAGS_MASK));
         idx = (virt >> 12) & 0x1FF;
         entry = pt[idx];
         if (!(entry & PT_PRESENT)) {
@@ -450,7 +450,7 @@ uint64_t* vmm_create_user_pml4() {
 int vmm_destroy_user_pml4(uint64_t* pml4) {
     if (pml4 == kern_pml4) return -1;
 
-    if (phys_to_virt(get_cr3() & CR3_ADDR_MASK) == pml4) {
+    if (phys_to_virt((phys_addr)(get_cr3() & CR3_ADDR_MASK)) == pml4) {
         set_cr3(virt_to_phys(kern_pml4));
     }
 
@@ -458,46 +458,46 @@ int vmm_destroy_user_pml4(uint64_t* pml4) {
         uint64_t pml4_entry = pml4[i];
         if (!(pml4_entry & PT_PRESENT)) continue;
 
-        uint64_t* pdpt = phys_to_virt(pml4_entry & (~FLAGS_MASK));
+        uint64_t* pdpt = phys_to_virt((phys_addr)(pml4_entry & (~FLAGS_MASK)));
         for (int j = 0; j < 512; j++) {
             uint64_t pdpt_entry = pdpt[j];
             if (!(pdpt_entry & PT_PRESENT)) continue;
             
-            uint64_t* pd = phys_to_virt(pdpt_entry & (~FLAGS_MASK));
+            uint64_t* pd = phys_to_virt((phys_addr)(pdpt_entry & (~FLAGS_MASK)));
             for (int k = 0; k < 512; k++) {
                 uint64_t pd_entry = pd[k];
                 if (!(pd_entry & PT_PRESENT)) continue;
 
                 if (pd_entry & PT_PSE) {
-                    void* addr = phys_to_virt(pd_entry & (~FLAGS_MASK));
+                    void* addr = phys_to_virt((phys_addr)(pd_entry & (~FLAGS_MASK)));
                     if ((uintptr_t)addr % 0x200000) panic("VMM: corrupted 2MB page alignment detected at %p\n", addr);
-                    struct page* page = addr_to_page(addr);
+                    struct page* page = hhdm_to_page(addr);
                     free_pages(page);
                     continue;
                 }
 
-                uint64_t* pt = phys_to_virt(pd_entry & (~FLAGS_MASK));
+                uint64_t* pt = phys_to_virt((phys_addr)(pd_entry & (~FLAGS_MASK)));
                 for (int l = 0; l < 512; l++) {
                     uint64_t pt_entry = pt[l];
                     if (!(pt_entry & PT_PRESENT)) continue;
-                    void* addr = phys_to_virt(pt_entry & (~FLAGS_MASK));
-                    struct page* page = addr_to_page(addr);
+                    void* addr = phys_to_virt((phys_addr)(pt_entry & (~FLAGS_MASK)));
+                    struct page* page = hhdm_to_page(addr);
                     free_pages(page);
                 }
 
-                struct page* pt_page = addr_to_page(pt);
+                struct page* pt_page = hhdm_to_page((hhdm_addr)pt);
                 free_pages(pt_page);
             }
 
-            struct page* pd_page = addr_to_page(pd);
+            struct page* pd_page = hhdm_to_page((hhdm_addr)pd);
             free_pages(pd_page);
         }
 
-        struct page* pdpt_page = addr_to_page(pdpt);
+        struct page* pdpt_page = hhdm_to_page((hhdm_addr)pdpt);
         free_pages(pdpt_page);
     }
 
-    struct page* pml4_page = addr_to_page(pml4);
+    struct page* pml4_page = hhdm_to_page((hhdm_addr)pml4);
     free_pages(pml4_page);
 
     return 0;

@@ -8,12 +8,11 @@
 #include <printk.h>
 #include <string.h>
 #include <mm.h>
+#include <addr.h>
 
 #define MEM_MAP_ADDR (0xFFFFEA0000000000)
 struct page* mem_map;
 size_t mem_nr_pages;
-
-#define HHDM_BASE (0xFFFF888000000000)
 
 int mem_init() {
     struct e820_table* table = e820_get_table();
@@ -36,13 +35,12 @@ int mem_init() {
     return 0;
 }
 
-void* page_to_addr(struct page* page) {
+hhdm_addr page_to_hhdm(struct page* page) {
     uintptr_t pfn = (struct page*)page - (struct page*)mem_map;
-    return (void*)(pfn * PAGE_SIZE + HHDM_BASE);
+    return (hhdm_addr)(pfn * PAGE_SIZE + HHDM_BASE);
 }
 
-struct page* addr_to_page(void* addr) {
-    if ((uintptr_t)addr >= HHDM_BASE) addr -= HHDM_BASE;
-    uintptr_t pfn = (uintptr_t)addr / PAGE_SIZE;
+struct page* hhdm_to_page(hhdm_addr hhdm) {
+    uintptr_t pfn = ((uintptr_t)hhdm - HHDM_BASE) / PAGE_SIZE;
     return &mem_map[pfn];
 }

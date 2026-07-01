@@ -6,7 +6,6 @@
 enum task_state {
     TASK_FREE = 0,
     TASK_INIT,
-    TASK_READY,
     TASK_RUNNING,
     TASK_DEAD,
 };
@@ -32,4 +31,4 @@ void run_task(struct task* task, uint64_t entry, uint64_t stack_top);
 
 struct page* task_alloc_pages(struct task* task, unsigned char order);
 
-// int kill_task(uint64_t pid);
+// TODO kill & delete task

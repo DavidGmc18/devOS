@@ -34,13 +34,10 @@ struct task* create_task(uint32_t priority) {
     return task;
 }
 
-static uint64_t min_vtime = 0;
-
 void run_task(struct task* task, uint64_t entry, uint64_t stack_top) {
     task->ctx.rip = (uint64_t)entry;
     task->ctx.rsp = (uint64_t)stack_top;
-    task->vtime = min_vtime;
-    task->state = TASK_READY;
+    task->state = TASK_RUNNING;
 }
 
 struct page* task_alloc_pages(struct task* task, unsigned char order) {
@@ -54,14 +51,35 @@ struct page* task_alloc_pages(struct task* task, unsigned char order) {
     return page;
 }
 
-// int kill_task(uint64_t pid) {
-//     struct task* task = NULL;
-//     for (unsigned int i = 0; ; i++) {
-//         if (tasks[i].pid != pid) continue;
-//         task = &tasks[i];
-//         break;
-//     }
-//     if (!task) return -1;
-//     // task->state = TASK_DEAD;
-//     return 0;
-// }
+static struct task* current = NULL;
+
+uint64_t clock = 0;
+#include <printk.h>
+
+void schedule(struct regs* r) {
+    if (current) {
+        current->ctx = *r;
+        current->vtime += current->priority;
+    }
+
+    uint64_t min_vtime = UINT64_MAX;
+    for (unsigned int i = 0; i < TASK_SLOTS; i++) {
+        if (tasks[i].state != TASK_RUNNING || tasks[i].vtime >= min_vtime) continue;
+        min_vtime = tasks[i].vtime;
+        current = &tasks[i];
+    }
+    if (!current) return;
+
+    for (unsigned int i = 0; i < TASK_SLOTS; i++) {
+        if (tasks[i].state == TASK_RUNNING) tasks[i].vtime -= min_vtime;
+    }
+
+    clock++;
+    if (clock >= 1024) {
+        clock = 0;
+        printk("A: rax=%lld    B: rax=%lld    C: rax=%lld    D: rax=%lld\n", tasks[0].ctx.rax, tasks[1].ctx.rax, tasks[2].ctx.rax, tasks[3].ctx.rax);
+    }
+
+    *r = current->ctx;
+    vmm_set_table(current->vmem);
+}

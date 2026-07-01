@@ -7,6 +7,7 @@
 #include "gdt.h"
 #include <printk.h>
 #include "tss.h"
+#include <sched/sched.h>
 
 #define IRQ_TO_INTERRUPT_OFFSET 32
 
@@ -24,17 +25,7 @@ void irq_init() {
     printk("[OK] IRQ initialized\n");
 }
 
-static int clock = 0;
-
-// TODO faster printk
 void irq_dispatch(struct regs* r) {
-    // printk(KERN_ERR "[ERR] Unhandled IRQ with vector ID %d\n", r->vector_id);
-
-    clock++;
-    if (clock >= 1024) {
-        clock = 0;
-        printk("RAX = %#lld\n", r->rax);
-    }
-
+    schedule(r);
     pic_send_EOI(r->vector_id - IRQ_TO_INTERRUPT_OFFSET);
 }

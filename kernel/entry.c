@@ -36,6 +36,42 @@ void user_test() {
     }
 }
 
+struct task* make_task(uint32_t priority) {
+    struct task* task = create_task(priority);
+    if (!task) return NULL;
+    vmm_set_table(task->vmem);
+
+    struct page* task_pages = task_alloc_pages(task, 1);
+    if (!task_pages) return NULL;
+
+    uintptr_t user_virt = 0x100000;
+    vmm_map(task->vmem, user_virt, (uintptr_t)hhdm_to_phys(page_to_hhdm(task_pages)), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
+
+    memcpy((void*)(user_virt + 0x1000), user_test, 0x1000);
+
+    run_task(task, user_virt + 0x1000, user_virt + 0x1000);
+
+    return task;
+}
+
+void enter_task(struct task* task) {
+    __asm__ volatile (
+        "pushq %q0 \n" // SS
+        "pushq %q1 \n" // RSP
+        "pushq %q2 \n" // RFLAGS
+        "pushq %q3 \n" // CS
+        "pushq %q4 \n" // RIP
+        "iretq" ::
+        "r" (task->ctx.ss),
+        "r" (task->ctx.rsp),
+        "r" (task->ctx.rflags),
+        "r" (task->ctx.cs),
+        "r" (task->ctx.rip)
+        : "rax", "memory"
+    );
+    __builtin_unreachable();
+}
+
 void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_table) {
     cli();
     memset(&__bss_start, 0, (&__bss_end) - (&__bss_start));
@@ -74,34 +110,11 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     printk(KERN_NOTICE "[NOTICE] Used %d B of the stack\n", __STACK_USED(kern_stack));
     #endif
 
-    struct task* task = create_task(10);
-    if (!task) panic("Failed to create task!\n");
-    vmm_set_table(task->vmem);
+    struct task* A = make_task(1024);
+    struct task* B = make_task(1024);
+    struct task* C = make_task(100);
+    struct task* D = make_task(10000);
 
-    struct page* task_pages = task_alloc_pages(task, 1);
-    if (!task_pages) panic("Failed to allocate task!\n");
-
-    uintptr_t user_virt = 0x100000;
-    vmm_map(task->vmem, user_virt, (uintptr_t)hhdm_to_phys(page_to_hhdm(task_pages)), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
-
-    memcpy((void*)(user_virt + 0x1000), user_test, 0x1000);
-
-    run_task(task, user_virt + 0x1000, user_virt + 0x1000);
-
-    __asm__ volatile (
-        "pushq %q0 \n" // SS
-        "pushq %q1 \n" // RSP
-        "pushq %q2 \n" // RFLAGS
-        "pushq %q3 \n" // CS
-        "pushq %q4 \n" // RIP
-        "iretq" ::
-        "r" (task->ctx.ss),
-        "r" (task->ctx.rsp),
-        "r" (task->ctx.rflags),
-        "r" (task->ctx.cs),
-        "r" (task->ctx.rip)
-        : "rax", "memory"
-    );
-
-    while (1) halt();
+    enter_task(A);
+    __builtin_unreachable();
 }

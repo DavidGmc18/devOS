@@ -3,8 +3,8 @@
 #include <stdint.h>
 
 struct regs {
-    uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
-    uint64_t rbp, rdi, rsi, rdx, rcx, rbx, rax;
+    uint64_t rax, rbx, rcx, rdx, rsi, rdi, rbp;
+    uint64_t r8, r9, r10, r11, r12, r13, r4, r15;
 
     union {
         uint64_t vector_id;

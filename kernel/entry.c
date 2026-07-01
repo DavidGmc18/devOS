@@ -16,9 +16,12 @@
 
 #include <addr.h>
 #include <mm.h>
+#include <panic.h>
 
 #include <mm/stack.h>
 #include <mm/mem.h>
+
+#include <sched/task.h>
 
 extern uint8_t __bss_start;
 extern uint8_t __bss_end;
@@ -71,36 +74,32 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     printk(KERN_NOTICE "[NOTICE] Used %d B of the stack\n", __STACK_USED(kern_stack));
     #endif
 
-    sti();
+    struct task* task = create_task(10);
+    if (!task) panic("Failed to create task!\n");
+    vmm_set_table(task->vmem);
 
-    // User space
+    struct page* task_pages = task_alloc_pages(task, 1);
+    if (!task_pages) panic("Failed to allocate task!\n");
+
     uintptr_t user_virt = 0x100000;
-
-    struct page* user_pages = alloc_pages(1);
-    
-    // TODO text should not be writable
-    uint64_t* user_pml4 = vmm_create_user_pml4();
-    vmm_map(user_pml4, user_virt, (uintptr_t)hhdm_to_phys(page_to_hhdm(user_pages)), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
-    vmm_set_table(user_pml4);
+    vmm_map(task->vmem, user_virt, (uintptr_t)hhdm_to_phys(page_to_hhdm(task_pages)), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
 
     memcpy((void*)(user_virt + 0x1000), user_test, 0x1000);
 
-    __asm__ volatile (
-        "mov %0, %%ds \n"
-        "mov %0, %%es \n"
-        
-        "pushq %q0 \n"
-        "pushq %q3 \n" // RSP
-        "pushfq \n" // RFLAGS
-        "pushq %q1 \n" // CS
-        "pushq %q2 \n" // RIP (target)
+    run_task(task, user_virt + 0x1000, user_virt + 0x1000);
 
-        "iretq \n"
-        ::
-        "r" ((uint64_t)(GDT_USER_DATA_SEGMENT | 3)),
-        "r" ((uint64_t)(GDT_USER_CODE_SEGMENT | 3)),
-        "r" ((uint64_t)(user_virt + 0x1000)), // Text base
-        "r" ((uint64_t)(user_virt + 0x1000)) // Stack top
+    __asm__ volatile (
+        "pushq %q0 \n" // SS
+        "pushq %q1 \n" // RSP
+        "pushq %q2 \n" // RFLAGS
+        "pushq %q3 \n" // CS
+        "pushq %q4 \n" // RIP
+        "iretq" ::
+        "r" (task->ctx.ss),
+        "r" (task->ctx.rsp),
+        "r" (task->ctx.rflags),
+        "r" (task->ctx.cs),
+        "r" (task->ctx.rip)
         : "rax", "memory"
     );
 

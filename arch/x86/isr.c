@@ -19,7 +19,7 @@ void isr_init() {
     isr_set_gate(0, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);
     isr_set_gate(1, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);
     isr_set_gate(2, GDT_KERNEL_CODE_SEGMENT, EMERG_IST, IDT_INTERRUPT_GATE, 0, 1);
-    isr_set_gate(3, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 3, 1); // TODO this is 3 temporary for testing
+    isr_set_gate(3, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);
     isr_set_gate(4, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);
     isr_set_gate(5, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);
     isr_set_gate(6, GDT_KERNEL_CODE_SEGMENT, NO_IST, IDT_TRAP_GATE, 0, 1);

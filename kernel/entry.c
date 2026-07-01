@@ -27,8 +27,10 @@ extern uint8_t __bss_end;
 #define VGA_FRAMEBUFFER_HHDM ((unsigned char*)0xFFFF8880000B8000)
 
 void user_test() {
-    __asm__ volatile("cli");
-    while (1);
+    __asm__ volatile ("mov $0, %%rax" ::: "rax");
+    while (1) {
+        __asm__ volatile ("inc %%rax" ::: "rax");
+    }
 }
 
 void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_table) {
@@ -63,7 +65,7 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     buddy_init();
     vmm_use_alloc_pages();
 
-    pit_set_freq(1000);
+    pit_set_freq(1024);
 
     #ifdef DEBUG
     printk(KERN_NOTICE "[NOTICE] Used %d B of the stack\n", __STACK_USED(kern_stack));
@@ -81,7 +83,7 @@ void __attribute__((noreturn, section(".entry"))) entry(struct e820_table* e820_
     vmm_map(user_pml4, user_virt, (uintptr_t)hhdm_to_phys(page_to_hhdm(user_pages)), 2*PAGE_SIZE, PT_PRESENT | PT_WRITABLE | PT_USER);
     vmm_set_table(user_pml4);
 
-    memcpy((void*)(user_virt + PAGE_SIZE), user_test, PAGE_SIZE);
+    memcpy((void*)(user_virt + 0x1000), user_test, 0x1000);
 
     __asm__ volatile (
         "mov %0, %%ds \n"

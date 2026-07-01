@@ -10,7 +10,7 @@
 
 #define IRQ_TO_INTERRUPT_OFFSET 32
 
-void irq_set_gate(uint8_t irq, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {
+static void irq_set_gate(uint8_t irq, uint16_t segment, uint8_t ist, uint8_t type, uint8_t dpl, bool p) {
     p ? pic_unmask(irq) : pic_mask(irq);
     isr_set_gate(irq+IRQ_TO_INTERRUPT_OFFSET, segment, ist, type, dpl, p);
 }
@@ -24,7 +24,17 @@ void irq_init() {
     printk("[OK] IRQ initialized\n");
 }
 
+static int clock = 0;
+
+// TODO faster printk
 void irq_dispatch(struct regs* r) {
     // printk(KERN_ERR "[ERR] Unhandled IRQ with vector ID %d\n", r->vector_id);
+
+    clock++;
+    if (clock >= 1024) {
+        clock = 0;
+        printk("RAX = %#lld\n", r->rax);
+    }
+
     pic_send_EOI(r->vector_id - IRQ_TO_INTERRUPT_OFFSET);
 }
